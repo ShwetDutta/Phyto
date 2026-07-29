@@ -1,0 +1,28 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+
+# Model Checkpoints & Results (Optional: keep outputs local/generated)
+checkpoints/*.pth
+checkpoints/*.onnx
+results/*.png
+results/*.md
+temp_docx/
+
+# Dataset large zip files (raw images stay local or dataset zip uploaded directly)
+*.zip
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
