@@ -53,18 +53,19 @@ Phyto/
 
 1. Open **Google Colab** and select a GPU runtime (`Runtime` -> `Change runtime type` -> `T4 GPU`).
 2. Upload `Phyto_Training_Benchmarking.ipynb` to your Google Colab environment.
-3. Upload the groundnut leaf dataset zip file (`Groundnut_Leaf_dataset.zip`) or mount your Google Drive.
-4. Execute cells sequentially. The notebook will automatically:
-   - Extract and verify dataset images.
+3. Execute cells sequentially. The notebook will automatically:
+   - Download dataset via `kagglehub` (`warcoder/groundnut-plant-leaf-data`).
    - Train the **Teacher Model** (`ResNet50`).
    - Train the **Baseline Model** (`ShuffleNetV2 1.0x`).
    - Train the **Proposed Model** (`CBAM-ShuffleNetV2` with Knowledge Distillation).
    - Apply **INT8 Quantization** and export to **ONNX**.
-   - Render comparative benchmark tables, loss curves, and confusion matrix heatmaps.
+   - Render comparative benchmark tables against literature baselines (ICCSCE 2025).
 
 ---
 
-## 📊 Baseline vs. Proposed Model Performance Matrix
+## 📊 Performance Comparison: Phyto vs. Literature Baselines
+
+### Part A: Phyto Experimental Framework Results
 
 | Metric | Teacher Model (`ResNet50`) | Baseline Model (`ShuffleNetV2`) | Proposed Model (`CBAM-ShuffleNet+KD`) | Proposed Model (`INT8 Quantized`) |
 | :--- | :---: | :---: | :---: | :---: |
@@ -76,6 +77,22 @@ Phyto/
 | **Throughput (FPS)** | $\sim 35$ FPS | $\sim 238$ FPS | $\sim 208$ FPS | **$\sim 625$ FPS** |
 | **Model Size (MB)** | $\sim 98.0$ MB | $\sim 9.2$ MB | $\sim 9.6$ MB | **$\sim 2.5$ MB** |
 | **Parameter Count** | $25.5$M | $2.3$M | $2.4$M | $2.4$M |
+
+### Part B: Published Literature Baseline Comparison (IEEE ICCSCE 2025 Paper Reference)
+
+> *Paper Reference: "An Analysis of Lightweight Convolutional Neural Network Models for Image Classification Task on Edge Device" (IEEE ICCSCE 2025)*
+
+| Model | Source Paper | Classification Accuracy (%) | Inference Time (ms) | Throughput (FPS) |
+| :--- | :---: | :---: | :---: | :---: |
+| **MobileNetV2** | ICCSCE 2025 | 91.02% | 14.50 ms | 68.98 FPS |
+| **MobileNetV3-Small** | ICCSCE 2025 | 87.40% | 10.63 ms | 94.08 FPS |
+| **MobileNetV3-Large** | ICCSCE 2025 | 82.88% | 14.15 ms | 70.70 FPS |
+| **ShuffleNetV2 x0.5** | ICCSCE 2025 | 98.06% | 9.41 ms | 106.76 FPS |
+| **ShuffleNetV2 x1.0** | ICCSCE 2025 | 97.66% | 12.30 ms | 81.33 FPS |
+| **ShuffleNetV2 x1.5** | ICCSCE 2025 | 97.21% | 14.80 ms | 67.84 FPS |
+| **ShuffleNetV2 x2.0** | ICCSCE 2025 | 95.62% | 17.12 ms | 58.44 FPS |
+| **VGG-16** | ICCSCE 2025 | 95.84% | 82.40 ms | 12.22 FPS |
+| **Phyto INT8 Proposed (Ours)** | **This Work** | **>94.5%** | **~1.60 ms** | **~625 FPS** |
 
 ---
 

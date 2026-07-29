@@ -6,6 +6,19 @@ import numpy as np
 import pandas as pd
 from phyto.config import Config
 
+# Published Benchmark Literature Data (IEEE ICCSCE 2025 Paper Reference)
+LITERATURE_BENCHMARKS = [
+    {"model_name": "MobileNetV2", "paper_ref": "ICCSCE 2025", "accuracy": 91.02, "latency_ms": 14.50, "fps": 68.98},
+    {"model_name": "MobileNetV3-Small", "paper_ref": "ICCSCE 2025", "accuracy": 87.40, "latency_ms": 10.63, "fps": 94.08},
+    {"model_name": "MobileNetV3-Large", "paper_ref": "ICCSCE 2025", "accuracy": 82.88, "latency_ms": 14.15, "fps": 70.70},
+    {"model_name": "ShuffleNetV2 x0.5", "paper_ref": "ICCSCE 2025", "accuracy": 98.06, "latency_ms": 9.41, "fps": 106.76},
+    {"model_name": "ShuffleNetV2 x1.0", "paper_ref": "ICCSCE 2025", "accuracy": 97.66, "latency_ms": 12.30, "fps": 81.33},
+    {"model_name": "ShuffleNetV2 x1.5", "paper_ref": "ICCSCE 2025", "accuracy": 97.21, "latency_ms": 14.80, "fps": 67.84},
+    {"model_name": "ShuffleNetV2 x2.0", "paper_ref": "ICCSCE 2025", "accuracy": 95.62, "latency_ms": 17.12, "fps": 58.44},
+    {"model_name": "VGG-16", "paper_ref": "ICCSCE 2025", "accuracy": 95.84, "latency_ms": 82.40, "fps": 12.22},
+]
+
+
 def plot_training_history(history_dict: Dict[str, Dict[str, List[float]]], save_path: str = "results/training_history.png"):
     """
     Plots training and validation loss and accuracy curves for multiple models.
@@ -124,9 +137,11 @@ def plot_comparison_bar_charts(
 
 def generate_summary_markdown_table(results_list: List[Dict[str, Any]]) -> str:
     """
-    Produces clean Markdown comparative table for baseline vs proposed model evaluation.
+    Produces clean Markdown comparative table for baseline vs proposed model evaluation,
+    including paper baseline literature comparison.
     """
-    table_md = "| Model Name | Attention | Distillation | Accuracy (%) | Macro F1 (%) | Latency (ms) | Throughput (FPS) | Size (MB) | Params (M) |\n"
+    table_md = "### Experimental Model Benchmarks (Phyto Project)\n\n"
+    table_md += "| Model Name | Attention | Distillation | Accuracy (%) | Macro F1 (%) | Latency (ms) | Throughput (FPS) | Size (MB) | Params (M) |\n"
     table_md += "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n"
 
     for r in results_list:
@@ -134,5 +149,12 @@ def generate_summary_markdown_table(results_list: List[Dict[str, Any]]) -> str:
         has_kd = "Yes" if "KD" in r["model_name"] or "Proposed" in r["model_name"] else "No"
 
         table_md += f"| **{r['model_name']}** | {has_cbam} | {has_kd} | {r['accuracy']:.2f}% | {r['f1_macro']:.2f}% | {r['latency_ms']:.2f} ms | {r['fps']:.1f} FPS | {r['model_size_mb']:.2f} MB | {r['total_params_m']:.2f}M |\n"
+
+    table_md += "\n### Reference Paper Benchmarks (IEEE ICCSCE 2025)\n\n"
+    table_md += "| Model Name | Reference Source | Classification Accuracy (%) | Inference Time (ms) | Throughput (FPS) |\n"
+    table_md += "| :--- | :---: | :---: | :---: | :---: |\n"
+
+    for lit in LITERATURE_BENCHMARKS:
+        table_md += f"| **{lit['model_name']}** | {lit['paper_ref']} | {lit['accuracy']:.2f}% | {lit['latency_ms']:.2f} ms | {lit['fps']:.2f} FPS |\n"
 
     return table_md
