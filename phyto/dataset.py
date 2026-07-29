@@ -57,15 +57,45 @@ def get_transforms(image_size: Tuple[int, int] = Config.IMAGE_SIZE) -> Tuple[tra
     return train_transform, eval_transform
 
 
+def resolve_dataset_directory(data_dir: str) -> str:
+    """
+    Resolves data directory path. If target folder does not exist locally,
+    automatically downloads dataset from Kaggle via kagglehub ('warcoder/groundnut-plant-leaf-data').
+    """
+    if os.path.exists(data_dir):
+        return data_dir
+
+    # Search alternative relative locations
+    alternative_local = os.path.join(
+        "Dataset of groundnut plant leaf images for classification and detection",
+        "Raw_Data"
+    )
+    if os.path.exists(alternative_local):
+        return alternative_local
+
+    # Fallback to automatic kagglehub download
+    print(f"[Dataset Engine] Local path '{data_dir}' not found.")
+    print("[Dataset Engine] Initiating automatic download via kagglehub ('warcoder/groundnut-plant-leaf-data')...")
+    try:
+        import kagglehub
+        downloaded_path = kagglehub.dataset_download("warcoder/groundnut-plant-leaf-data")
+        raw_data_path = os.path.join(downloaded_path, "Raw_Data")
+        if os.path.exists(raw_data_path):
+            return raw_data_path
+        return downloaded_path
+    except Exception as e:
+        raise FileNotFoundError(
+            f"Dataset directory not found at '{data_dir}' and kagglehub download failed: {e}"
+        )
+
+
 def load_dataset_filepaths(data_dir: str) -> Tuple[List[str], List[int], Dict[str, int], Dict[int, str]]:
     """
     Scans data_dir for class subdirectories and collects all valid image file paths and target labels.
     """
-    if not os.path.exists(data_dir):
-        raise FileNotFoundError(f"Dataset directory not found at: {data_dir}")
+    actual_dir = resolve_dataset_directory(data_dir)
 
-    # Standardize class folder matching
-    subdirs = [d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))]
+    subdirs = [d for d in os.listdir(actual_dir) if os.path.isdir(os.path.join(actual_dir, d))]
     subdirs.sort()
 
     class_to_idx = {cls_name: i for i, cls_name in enumerate(subdirs)}
@@ -76,7 +106,7 @@ def load_dataset_filepaths(data_dir: str) -> Tuple[List[str], List[int], Dict[st
     labels = []
 
     for cls_name in subdirs:
-        cls_dir = os.path.join(data_dir, cls_name)
+        cls_dir = os.path.join(actual_dir, cls_name)
         cls_idx = class_to_idx[cls_name]
         
         for root, _, files in os.walk(cls_dir):
