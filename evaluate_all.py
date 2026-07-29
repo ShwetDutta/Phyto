@@ -29,7 +29,7 @@ def load_checkpoint_or_init(model: torch.nn.Module, checkpoint_name: str, device
 
 def main():
     parser = argparse.ArgumentParser(description="Phyto Evaluation & Benchmarking Pipeline")
-    parser.add_argument("--data-dir", type=str, default=Config.DEFAULT_DATA_DIR, help="Path to Raw_Data folder")
+    parser.add_argument("--data-dir", type=str, default=None, help="Path to Raw_Data folder (Optional: auto-resolves via kagglehub)")
     parser.add_argument("--batch-size", type=int, default=Config.BATCH_SIZE, help="Batch size")
     args = parser.parse_args()
 

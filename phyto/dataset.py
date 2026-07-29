@@ -57,41 +57,64 @@ def get_transforms(image_size: Tuple[int, int] = Config.IMAGE_SIZE) -> Tuple[tra
     return train_transform, eval_transform
 
 
-def resolve_dataset_directory(data_dir: str) -> str:
+def resolve_dataset_directory(data_dir: str = None) -> str:
     """
-    Resolves data directory path. If target folder does not exist locally,
+    Robustly resolves data directory path. If no local path exists,
     automatically downloads dataset from Kaggle via kagglehub ('warcoder/groundnut-plant-leaf-data').
     """
-    if os.path.exists(data_dir):
-        return data_dir
-
-    # Search alternative relative locations
-    alternative_local = os.path.join(
+    candidate_paths = []
+    if data_dir:
+        candidate_paths.append(data_dir)
+    
+    candidate_paths.extend([
+        Config.DEFAULT_DATA_DIR,
+        "Dataset of groundnut plant leaf images for classification and detection/Raw_Data",
         "Dataset of groundnut plant leaf images for classification and detection",
-        "Raw_Data"
-    )
-    if os.path.exists(alternative_local):
-        return alternative_local
+        "Raw_Data",
+        "/content/Dataset of groundnut plant leaf images for classification and detection/Raw_Data",
+        "/content/Raw_Data"
+    ])
+
+    for path in candidate_paths:
+        if path and os.path.exists(path):
+            subdirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+            if len(subdirs) >= 2:
+                print(f"[Dataset Engine] Located existing local dataset at: {path}")
+                return path
 
     # Fallback to automatic kagglehub download
-    print(f"[Dataset Engine] Local path '{data_dir}' not found.")
+    print(f"[Dataset Engine] Local dataset folder not found.")
     print("[Dataset Engine] Initiating automatic download via kagglehub ('warcoder/groundnut-plant-leaf-data')...")
     try:
         import kagglehub
         downloaded_path = kagglehub.dataset_download("warcoder/groundnut-plant-leaf-data")
+        print(f"[Dataset Engine] kagglehub download finished: {downloaded_path}")
+
+        # Check for Raw_Data subfolder inside downloaded directory
         raw_data_path = os.path.join(downloaded_path, "Raw_Data")
         if os.path.exists(raw_data_path):
             return raw_data_path
+
+        subdirs = [d for d in os.listdir(downloaded_path) if os.path.isdir(os.path.join(downloaded_path, d))]
+        if len(subdirs) >= 2:
+            return downloaded_path
+
+        # Recursive search for subfolder containing class folders
+        for root, dirs, files in os.walk(downloaded_path):
+            if len(dirs) >= 4:
+                return root
+
         return downloaded_path
     except Exception as e:
         raise FileNotFoundError(
-            f"Dataset directory not found at '{data_dir}' and kagglehub download failed: {e}"
+            f"Dataset directory not found locally and kagglehub download failed: {e}\n"
+            f"Please ensure 'kagglehub' is installed (`pip install kagglehub`)."
         )
 
 
-def load_dataset_filepaths(data_dir: str) -> Tuple[List[str], List[int], Dict[str, int], Dict[int, str]]:
+def load_dataset_filepaths(data_dir: str = None) -> Tuple[List[str], List[int], Dict[str, int], Dict[int, str]]:
     """
-    Scans data_dir for class subdirectories and collects all valid image file paths and target labels.
+    Scans resolved data_dir for class subdirectories and collects all valid image file paths and target labels.
     """
     actual_dir = resolve_dataset_directory(data_dir)
 
@@ -121,7 +144,7 @@ def load_dataset_filepaths(data_dir: str) -> Tuple[List[str], List[int], Dict[st
 
 
 def build_dataloaders(
-    data_dir: str = Config.DEFAULT_DATA_DIR,
+    data_dir: str = None,
     batch_size: int = Config.BATCH_SIZE,
     seed: int = Config.SEED,
     num_workers: int = Config.NUM_WORKERS

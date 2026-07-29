@@ -13,7 +13,7 @@ from phyto.quantization import quantize_model_int8, export_to_onnx
 
 def main():
     parser = argparse.ArgumentParser(description="Phyto Local Model Training & Optimization Pipeline")
-    parser.add_argument("--data-dir", type=str, default=Config.DEFAULT_DATA_DIR, help="Path to Raw_Data folder")
+    parser.add_argument("--data-dir", type=str, default=None, help="Path to Raw_Data folder (Optional: auto-resolves via kagglehub)")
     parser.add_argument("--batch-size", type=int, default=Config.BATCH_SIZE, help="Batch size")
     parser.add_argument("--epochs-teacher", type=int, default=Config.NUM_EPOCHS_TEACHER, help="Teacher epochs")
     parser.add_argument("--epochs-student", type=int, default=Config.NUM_EPOCHS_STUDENT, help="Student epochs")
