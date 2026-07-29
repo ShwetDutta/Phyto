@@ -94,7 +94,7 @@ def plot_comparison_bar_charts(
     colors = ["#3498db", "#e74c3c", "#2ecc71", "#9b59b6"]
 
     # 1. Accuracy
-    sns.barplot(data=df, x="model_name", y="accuracy", ax=axes[0, 0], palette=colors[:len(df)])
+    sns.barplot(data=df, x="model_name", y="accuracy", hue="model_name", legend=False, ax=axes[0, 0], palette=colors[:len(df)])
     axes[0, 0].set_title("Test Accuracy (%) [Higher is Better]", fontweight="bold")
     axes[0, 0].set_ylabel("Accuracy (%)")
     for p in axes[0, 0].patches:
@@ -102,7 +102,7 @@ def plot_comparison_bar_charts(
                             ha='center', va='bottom', fontsize=10, xytext=(0, 3), textcoords='offset points')
 
     # 2. F1-Score
-    sns.barplot(data=df, x="model_name", y="f1_macro", ax=axes[0, 1], palette=colors[:len(df)])
+    sns.barplot(data=df, x="model_name", y="f1_macro", hue="model_name", legend=False, ax=axes[0, 1], palette=colors[:len(df)])
     axes[0, 1].set_title("Macro F1-Score (%) [Higher is Better]", fontweight="bold")
     axes[0, 1].set_ylabel("F1 Score (%)")
     for p in axes[0, 1].patches:
@@ -110,7 +110,7 @@ def plot_comparison_bar_charts(
                             ha='center', va='bottom', fontsize=10, xytext=(0, 3), textcoords='offset points')
 
     # 3. Latency
-    sns.barplot(data=df, x="model_name", y="latency_ms", ax=axes[1, 0], palette=colors[:len(df)])
+    sns.barplot(data=df, x="model_name", y="latency_ms", hue="model_name", legend=False, ax=axes[1, 0], palette=colors[:len(df)])
     axes[1, 0].set_title("Inference Latency (ms/sample) [Lower is Better]", fontweight="bold")
     axes[1, 0].set_ylabel("Latency (ms)")
     for p in axes[1, 0].patches:
@@ -118,7 +118,7 @@ def plot_comparison_bar_charts(
                             ha='center', va='bottom', fontsize=10, xytext=(0, 3), textcoords='offset points')
 
     # 4. Model Size
-    sns.barplot(data=df, x="model_name", y="model_size_mb", ax=axes[1, 1], palette=colors[:len(df)])
+    sns.barplot(data=df, x="model_name", y="model_size_mb", hue="model_name", legend=False, ax=axes[1, 1], palette=colors[:len(df)])
     axes[1, 1].set_title("Model File Size (MB) [Lower is Better]", fontweight="bold")
     axes[1, 1].set_ylabel("Size (MB)")
     for p in axes[1, 1].patches:

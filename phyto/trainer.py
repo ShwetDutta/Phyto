@@ -141,7 +141,7 @@ def train_model(
         "val_acc": []
     }
 
-    best_val_acc = 0.0
+    best_val_acc = -1.0
     start_time = time.time()
 
     mode_str = "Knowledge Distillation" if teacher_model is not None else "Standard Supervised"
@@ -179,6 +179,15 @@ def train_model(
                 "optimizer_state_dict": optimizer.state_dict()
             }, save_path)
             print(f" ---> Best Checkpoint Saved! (Val Acc: {best_val_acc:.2f}%)")
+
+    # Final guarantee save if checkpoint doesn't exist
+    if not os.path.exists(save_path):
+        torch.save({
+            "epoch": epochs,
+            "model_state_dict": model.state_dict(),
+            "val_acc": history["val_acc"][-1],
+            "optimizer_state_dict": optimizer.state_dict()
+        }, save_path)
 
     elapsed = time.time() - start_time
     print(f"Training Complete in {elapsed/60:.2f} mins. Best Val Acc: {best_val_acc:.2f}%\n")

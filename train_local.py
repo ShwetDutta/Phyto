@@ -5,6 +5,7 @@ Trains Teacher Model, Baseline ShuffleNetV2, and Proposed Knowledge-Distilled CB
 
 import os
 import argparse
+import torch
 from phyto.config import Config
 from phyto.dataset import build_dataloaders
 from phyto.models import TeacherResNet50, BaselineShuffleNetV2, CBAMShuffleNetV2
@@ -39,6 +40,13 @@ def main():
         lr=args.lr,
         save_filename="teacher_resnet50.pth"
     )
+
+    # Load best saved teacher checkpoint to guarantee high accuracy teacher
+    teacher_ckpt_path = os.path.join(Config.CHECKPOINT_DIR, "teacher_resnet50.pth")
+    if os.path.exists(teacher_ckpt_path):
+        ckpt = torch.load(teacher_ckpt_path, map_location=Config.DEVICE)
+        teacher.load_state_dict(ckpt.get("model_state_dict", ckpt))
+        print(f"[Teacher Setup] Successfully loaded best Teacher checkpoint for distillation.")
 
     # 3. Train Baseline Model (ShuffleNetV2 1.0x without Attention or KD)
     print("\n>>> Phase 2: Training Baseline Model (ShuffleNetV2 1.0x)...")
