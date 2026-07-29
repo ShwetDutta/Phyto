@@ -76,6 +76,9 @@ def main():
         save_path="checkpoints/proposed_cbam_shufflenetv2.onnx"
     )
 
+    # Automatically back up checkpoints & results to Google Drive if mounted
+    Config.sync_to_gdrive()
+
     print("\n[SUCCESS] Phyto Training & Optimization Pipeline Executed Successfully!")
 
 if __name__ == "__main__":

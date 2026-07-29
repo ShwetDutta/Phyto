@@ -35,6 +35,9 @@ def main():
 
     Config.setup_directories()
 
+    # Restore checkpoints from Google Drive if available
+    Config.restore_from_gdrive()
+
     _, _, test_loader, _, _ = build_dataloaders(
         data_dir=args.data_dir,
         batch_size=args.batch_size
@@ -82,6 +85,9 @@ def main():
 
     plot_confusion_matrices(results, save_path="results/confusion_matrices.png")
     plot_comparison_bar_charts(results, save_path="results/model_comparison.png")
+
+    # Sync results back to Google Drive if mounted
+    Config.sync_to_gdrive()
 
     print("\n[SUCCESS] All evaluation plots and summary table written to 'results/' directory.")
 
