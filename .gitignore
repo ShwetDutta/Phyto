@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw dataset
+Dataset of groundnut plant leaf images for classification and detection/Raw_Data/
+
+# Large model files
+*.pt
+*.pth
+*.onnx
+*.engine
+*.safetensors
+
+# Environment/secrets
+.env

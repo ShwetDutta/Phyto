@@ -1,0 +1,761 @@
+{
+  "paths": {
+    "workspace_root": "C:\\Users\\Shwet\\Desktop\\Phyto_1",
+    "raw_data_rel": "Dataset of groundnut plant leaf images for classification and detection\\Raw_Data",
+    "raw_data_abs": "C:\\Users\\Shwet\\Desktop\\Phyto_1\\Dataset of groundnut plant leaf images for classification and detection\\Raw_Data",
+    "metadata_rel": "Dataset of groundnut plant leaf images for classification and detection\\Metadata.xlsx",
+    "metadata_abs": "C:\\Users\\Shwet\\Desktop\\Phyto_1\\Dataset of groundnut plant leaf images for classification and detection\\Metadata.xlsx"
+  },
+  "raw_data_scan": {
+    "folders": [
+      "early_leaf_spot",
+      "healthy leaf",
+      "late leaf spot",
+      "nutrition deficiency",
+      "rust"
+    ],
+    "folder_image_counts": {
+      "early_leaf_spot": 885,
+      "healthy leaf": 929,
+      "late leaf spot": 689,
+      "nutrition deficiency": 329,
+      "rust": 226
+    },
+    "ext_counts": {
+      ".JPG": 3058
+    },
+    "total_images": 3058,
+    "nested_folders": [],
+    "image_resolutions": {
+      "1200x800": 3058
+    },
+    "image_modes": {
+      "RGB": 3058
+    },
+    "corrupt_images_count": 0,
+    "content_duplicates_count": 0,
+    "cross_folder_filename_duplicates_count": 47,
+    "cross_folder_filename_duplicates": {
+      "img_3483.jpg": [
+        "early_leaf_spot/IMG_3483.JPG",
+        "nutrition deficiency/IMG_3483.JPG"
+      ],
+      "img_3484.jpg": [
+        "early_leaf_spot/IMG_3484.JPG",
+        "nutrition deficiency/IMG_3484.JPG"
+      ],
+      "img_3485.jpg": [
+        "early_leaf_spot/IMG_3485.JPG",
+        "nutrition deficiency/IMG_3485.JPG"
+      ],
+      "img_3486.jpg": [
+        "early_leaf_spot/IMG_3486.JPG",
+        "nutrition deficiency/IMG_3486.JPG"
+      ],
+      "img_3487.jpg": [
+        "early_leaf_spot/IMG_3487.JPG",
+        "nutrition deficiency/IMG_3487.JPG"
+      ],
+      "img_3488.jpg": [
+        "early_leaf_spot/IMG_3488.JPG",
+        "nutrition deficiency/IMG_3488.JPG"
+      ],
+      "img_3489.jpg": [
+        "early_leaf_spot/IMG_3489.JPG",
+        "nutrition deficiency/IMG_3489.JPG"
+      ],
+      "img_3490.jpg": [
+        "early_leaf_spot/IMG_3490.JPG",
+        "nutrition deficiency/IMG_3490.JPG"
+      ],
+      "img_3491.jpg": [
+        "early_leaf_spot/IMG_3491.JPG",
+        "nutrition deficiency/IMG_3491.JPG"
+      ],
+      "img_3492.jpg": [
+        "early_leaf_spot/IMG_3492.JPG",
+        "nutrition deficiency/IMG_3492.JPG"
+      ],
+      "img_3493.jpg": [
+        "early_leaf_spot/IMG_3493.JPG",
+        "nutrition deficiency/IMG_3493.JPG"
+      ],
+      "img_3494.jpg": [
+        "early_leaf_spot/IMG_3494.JPG",
+        "nutrition deficiency/IMG_3494.JPG"
+      ],
+      "img_3495.jpg": [
+        "early_leaf_spot/IMG_3495.JPG",
+        "nutrition deficiency/IMG_3495.JPG"
+      ],
+      "img_3496.jpg": [
+        "early_leaf_spot/IMG_3496.JPG",
+        "nutrition deficiency/IMG_3496.JPG"
+      ],
+      "img_3497.jpg": [
+        "early_leaf_spot/IMG_3497.JPG",
+        "nutrition deficiency/IMG_3497.JPG"
+      ],
+      "img_3498.jpg": [
+        "early_leaf_spot/IMG_3498.JPG",
+        "nutrition deficiency/IMG_3498.JPG"
+      ],
+      "img_4305.jpg": [
+        "early_leaf_spot/IMG_4305.JPG",
+        "healthy leaf/IMG_4305.JPG"
+      ],
+      "img_4306.jpg": [
+        "early_leaf_spot/IMG_4306.JPG",
+        "healthy leaf/IMG_4306.JPG"
+      ],
+      "img_4307.jpg": [
+        "early_leaf_spot/IMG_4307.JPG",
+        "healthy leaf/IMG_4307.JPG"
+      ],
+      "img_4308.jpg": [
+        "early_leaf_spot/IMG_4308.JPG",
+        "healthy leaf/IMG_4308.JPG"
+      ],
+      "img_4309.jpg": [
+        "early_leaf_spot/IMG_4309.JPG",
+        "healthy leaf/IMG_4309.JPG"
+      ],
+      "img_4310.jpg": [
+        "early_leaf_spot/IMG_4310.JPG",
+        "healthy leaf/IMG_4310.JPG"
+      ],
+      "img_4311.jpg": [
+        "early_leaf_spot/IMG_4311.JPG",
+        "healthy leaf/IMG_4311.JPG"
+      ],
+      "img_4312.jpg": [
+        "early_leaf_spot/IMG_4312.JPG",
+        "healthy leaf/IMG_4312.JPG"
+      ],
+      "img_4313.jpg": [
+        "early_leaf_spot/IMG_4313.JPG",
+        "healthy leaf/IMG_4313.JPG"
+      ],
+      "img_4314.jpg": [
+        "early_leaf_spot/IMG_4314.JPG",
+        "healthy leaf/IMG_4314.JPG"
+      ],
+      "img_5707.jpg": [
+        "late leaf spot/IMG_5707.JPG",
+        "nutrition deficiency/IMG_5707.JPG"
+      ],
+      "img_5708.jpg": [
+        "late leaf spot/IMG_5708.JPG",
+        "nutrition deficiency/IMG_5708.JPG"
+      ],
+      "img_5709.jpg": [
+        "late leaf spot/IMG_5709.JPG",
+        "nutrition deficiency/IMG_5709.JPG"
+      ],
+      "img_5710.jpg": [
+        "late leaf spot/IMG_5710.JPG",
+        "nutrition deficiency/IMG_5710.JPG"
+      ],
+      "img_5711.jpg": [
+        "late leaf spot/IMG_5711.JPG",
+        "nutrition deficiency/IMG_5711.JPG"
+      ],
+      "img_5712.jpg": [
+        "late leaf spot/IMG_5712.JPG",
+        "nutrition deficiency/IMG_5712.JPG"
+      ],
+      "img_5713.jpg": [
+        "late leaf spot/IMG_5713.JPG",
+        "nutrition deficiency/IMG_5713.JPG"
+      ],
+      "img_5714.jpg": [
+        "late leaf spot/IMG_5714.JPG",
+        "nutrition deficiency/IMG_5714.JPG"
+      ],
+      "img_5715.jpg": [
+        "late leaf spot/IMG_5715.JPG",
+        "nutrition deficiency/IMG_5715.JPG"
+      ],
+      "img_5716.jpg": [
+        "late leaf spot/IMG_5716.JPG",
+        "nutrition deficiency/IMG_5716.JPG"
+      ],
+      "img_5717.jpg": [
+        "late leaf spot/IMG_5717.JPG",
+        "nutrition deficiency/IMG_5717.JPG"
+      ],
+      "img_5718.jpg": [
+        "late leaf spot/IMG_5718.JPG",
+        "nutrition deficiency/IMG_5718.JPG"
+      ],
+      "img_5719.jpg": [
+        "late leaf spot/IMG_5719.JPG",
+        "nutrition deficiency/IMG_5719.JPG"
+      ],
+      "img_5720.jpg": [
+        "late leaf spot/IMG_5720.JPG",
+        "nutrition deficiency/IMG_5720.JPG"
+      ],
+      "img_5721.jpg": [
+        "late leaf spot/IMG_5721.JPG",
+        "nutrition deficiency/IMG_5721.JPG"
+      ],
+      "img_5722.jpg": [
+        "late leaf spot/IMG_5722.JPG",
+        "nutrition deficiency/IMG_5722.JPG"
+      ],
+      "img_5723.jpg": [
+        "late leaf spot/IMG_5723.JPG",
+        "nutrition deficiency/IMG_5723.JPG"
+      ],
+      "img_5724.jpg": [
+        "late leaf spot/IMG_5724.JPG",
+        "nutrition deficiency/IMG_5724.JPG"
+      ],
+      "img_5725.jpg": [
+        "late leaf spot/IMG_5725.JPG",
+        "nutrition deficiency/IMG_5725.JPG"
+      ],
+      "img_5726.jpg": [
+        "late leaf spot/IMG_5726.JPG",
+        "nutrition deficiency/IMG_5726.JPG"
+      ],
+      "img_5727.jpg": [
+        "late leaf spot/IMG_5727.JPG",
+        "nutrition deficiency/IMG_5727.JPG"
+      ]
+    }
+  },
+  "early_rust_findings": {
+    "raw_folder_exists": false,
+    "metadata_count": 1474,
+    "matched_to_raw_count": 34,
+    "matched_files": [
+      [
+        "IMG_8842.jpg",
+        "Train",
+        "rust/IMG_8842.JPG"
+      ],
+      [
+        "IMG_8848.jpg",
+        "Train",
+        "rust/IMG_8848.JPG"
+      ],
+      [
+        "IMG_8849.jpg",
+        "Train",
+        "rust/IMG_8849.JPG"
+      ],
+      [
+        "IMG_8852.jpg",
+        "Train",
+        "rust/IMG_8852.JPG"
+      ],
+      [
+        "IMG_8870.jpg",
+        "Train",
+        "rust/IMG_8870.JPG"
+      ],
+      [
+        "IMG_8872.jpg",
+        "Train",
+        "rust/IMG_8872.JPG"
+      ],
+      [
+        "IMG_8906.jpg",
+        "Train",
+        "rust/IMG_8906.JPG"
+      ],
+      [
+        "IMG_8907.jpg",
+        "Train",
+        "rust/IMG_8907.JPG"
+      ],
+      [
+        "IMG_8908.jpg",
+        "Train",
+        "rust/IMG_8908.JPG"
+      ],
+      [
+        "IMG_8910.jpg",
+        "Train",
+        "rust/IMG_8910.JPG"
+      ],
+      [
+        "IMG_8911.jpg",
+        "Train",
+        "rust/IMG_8911.JPG"
+      ],
+      [
+        "IMG_8914.jpg",
+        "Train",
+        "rust/IMG_8914.JPG"
+      ],
+      [
+        "IMG_8939.jpg",
+        "Train",
+        "rust/IMG_8939.JPG"
+      ],
+      [
+        "IMG_8940.jpg",
+        "Train",
+        "rust/IMG_8940.JPG"
+      ],
+      [
+        "IMG_8941.jpg",
+        "Train",
+        "rust/IMG_8941.JPG"
+      ],
+      [
+        "IMG_8950.jpg",
+        "Train",
+        "rust/IMG_8950.JPG"
+      ],
+      [
+        "IMG_8951.jpg",
+        "Train",
+        "rust/IMG_8951.JPG"
+      ],
+      [
+        "IMG_8952.jpg",
+        "Train",
+        "rust/IMG_8952.JPG"
+      ],
+      [
+        "IMG_8953.jpg",
+        "Train",
+        "rust/IMG_8953.JPG"
+      ],
+      [
+        "IMG_8968.jpg",
+        "Train",
+        "rust/IMG_8968.JPG"
+      ],
+      [
+        "IMG_8969.jpg",
+        "Train",
+        "rust/IMG_8969.JPG"
+      ],
+      [
+        "IMG_8970.jpg",
+        "Train",
+        "rust/IMG_8970.JPG"
+      ],
+      [
+        "IMG_8971.jpg",
+        "Train",
+        "rust/IMG_8971.JPG"
+      ],
+      [
+        "IMG_8973.jpg",
+        "Train",
+        "rust/IMG_8973.JPG"
+      ],
+      [
+        "IMG_8977.jpg",
+        "Train",
+        "rust/IMG_8977.JPG"
+      ],
+      [
+        "IMG_8978.jpg",
+        "Train",
+        "rust/IMG_8978.JPG"
+      ],
+      [
+        "IMG_8984.jpg",
+        "Train",
+        "rust/IMG_8984.JPG"
+      ],
+      [
+        "IMG_8987.jpg",
+        "Train",
+        "rust/IMG_8987.JPG"
+      ],
+      [
+        "IMG_8988.jpg",
+        "Train",
+        "rust/IMG_8988.JPG"
+      ],
+      [
+        "IMG_8990.jpg",
+        "Train",
+        "rust/IMG_8990.JPG"
+      ],
+      [
+        "IMG_8991.jpg",
+        "Train",
+        "rust/IMG_8991.JPG"
+      ],
+      [
+        "IMG_8942.jpg",
+        "Test",
+        "rust/IMG_8942.JPG"
+      ],
+      [
+        "IMG_8946.jpg",
+        "Test",
+        "rust/IMG_8946.JPG"
+      ],
+      [
+        "IMG_8947.jpg",
+        "Test",
+        "rust/IMG_8947.JPG"
+      ]
+    ]
+  },
+  "metadata_scan": {
+    "sheets": [
+      "Train",
+      "Test",
+      "Sheet3"
+    ],
+    "train_rows": 7910,
+    "test_rows": 2451,
+    "total_rows": 10361,
+    "train_class_dist": {
+      "Late Leaf spot": 1491,
+      "Healthy Leaf": 1462,
+      "Early Leaf Spot": 1322,
+      "Rust": 1315,
+      "Nutrition Deficiency": 1255,
+      "Early Rust": 1065
+    },
+    "test_class_dist": {
+      "Nutrition Deficiency": 410,
+      "Early Leaf Spot": 409,
+      "Early Rust": 409,
+      "Healthy Leaf": 409,
+      "Rust": 409,
+      "Late Leaf Spot": 405
+    },
+    "train_unique_fids": 7835,
+    "test_unique_fids": 2400,
+    "train_dup_fids_count": 75,
+    "train_dup_rows_count": 148,
+    "test_dup_fids_count": 51,
+    "test_dup_rows_count": 102,
+    "overlap_fids_count": 24,
+    "pattern_counts": {
+      "other": 172,
+      "numeric": 237,
+      "dr_prefix": 9336,
+      "IMG_prefix": 616
+    }
+  },
+  "matching_analysis": {
+    "matched_metadata_records": 369,
+    "unmatched_metadata_records_count": 9992,
+    "matching_rate_meta_pct": 3.56,
+    "matched_raw_files_count": 313,
+    "raw_data_coverage_pct": 10.24,
+    "images_absent_from_meta_count": 2745,
+    "sample_images_absent_from_meta": [
+      "early_leaf_spot/IMG_0325.JPG",
+      "early_leaf_spot/IMG_0326.JPG",
+      "early_leaf_spot/IMG_0327.JPG",
+      "early_leaf_spot/IMG_0328.JPG",
+      "early_leaf_spot/IMG_0329.JPG",
+      "early_leaf_spot/IMG_0330.JPG",
+      "early_leaf_spot/IMG_0331.JPG",
+      "early_leaf_spot/IMG_0332.JPG",
+      "early_leaf_spot/IMG_0333.JPG",
+      "early_leaf_spot/IMG_0367.JPG",
+      "early_leaf_spot/IMG_0368.JPG",
+      "early_leaf_spot/IMG_0369.JPG",
+      "early_leaf_spot/IMG_0370.JPG",
+      "early_leaf_spot/IMG_0371.JPG",
+      "early_leaf_spot/IMG_0695.JPG"
+    ]
+  },
+  "train_test_overlap_analysis": [
+    {
+      "File Id": "22.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Late Leaf Spot"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/22.JPG"
+      ],
+      "Hashes": [
+        "a9412b0d3e477b83445972de5b0cf2e954d0ac3e9a5131857c6d2ae0d0d1c737"
+      ]
+    },
+    {
+      "File Id": "23.jpg",
+      "Train Classes": [
+        "Healthy Leaf",
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Late Leaf Spot"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/23.JPG"
+      ],
+      "Hashes": [
+        "e04055e96d80afbc1ae42454fd651fe619393206a2f7b6718b26c1201579cb31"
+      ]
+    },
+    {
+      "File Id": "39.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/39.JPG"
+      ],
+      "Hashes": [
+        "98f9805445458ae010e95f42907c62b00969b03307dc7d20b0aacb41f1ae1208"
+      ]
+    },
+    {
+      "File Id": "40.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/40.JPG"
+      ],
+      "Hashes": [
+        "17c6be05cff14f1c6da60ebce7c84477a86fa068a0bf00b9ab891921979acdec"
+      ]
+    },
+    {
+      "File Id": "41.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/41.JPG"
+      ],
+      "Hashes": [
+        "29c4293c37a92826a8ac7c81c4966a9a7de894f2c70921cd5153813383f8d063"
+      ]
+    },
+    {
+      "File Id": "42.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [
+        "nutrition deficiency/42.JPG"
+      ],
+      "Hashes": [
+        "ba22679bf80d01aecb0702f5778b7d7613a4989936f674b061325c96f81f64db"
+      ]
+    },
+    {
+      "File Id": "dr_0_8175.jpg",
+      "Train Classes": [
+        "Late Leaf spot"
+      ],
+      "Test Classes": [
+        "Early Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_0_9881.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_1_2577.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Early Leaf Spot"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_1_2919.jpg",
+      "Train Classes": [
+        "Early Rust"
+      ],
+      "Test Classes": [
+        "Early Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_1_8956.jpg",
+      "Train Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Test Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_1_9542.jpg",
+      "Train Classes": [
+        "Early Rust"
+      ],
+      "Test Classes": [
+        "Early Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_2_1378.jpg",
+      "Train Classes": [
+        "Early Leaf Spot"
+      ],
+      "Test Classes": [
+        "Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_2_1588.jpg",
+      "Train Classes": [
+        "Late Leaf spot"
+      ],
+      "Test Classes": [
+        "Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_2_1761.jpg",
+      "Train Classes": [
+        "Early Rust"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_2_9786.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Early Leaf Spot"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_1898.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Early Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_2101.jpg",
+      "Train Classes": [
+        "Late Leaf spot"
+      ],
+      "Test Classes": [
+        "Early Leaf Spot"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_616.jpg",
+      "Train Classes": [
+        "Early Rust"
+      ],
+      "Test Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_7825.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_8007.jpg",
+      "Train Classes": [
+        "Early Leaf Spot"
+      ],
+      "Test Classes": [
+        "Early Leaf Spot"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_3_9746.jpg",
+      "Train Classes": [
+        "Early Leaf Spot"
+      ],
+      "Test Classes": [
+        "Rust"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_4_3240.jpg",
+      "Train Classes": [
+        "Early Rust"
+      ],
+      "Test Classes": [
+        "Healthy Leaf"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    },
+    {
+      "File Id": "dr_4_4960.jpg",
+      "Train Classes": [
+        "Rust"
+      ],
+      "Test Classes": [
+        "Nutrition Deficiency"
+      ],
+      "Resolved Raw Files": [],
+      "Hashes": []
+    }
+  ]
+}
