@@ -7,6 +7,7 @@ from .shufflenet_v2 import (
     ShuffleNetV2CBAM,
     create_shufflenet_v2,
     create_shufflenet_v2_cbam,
+    create_shufflenet_v2_x0_5,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ShuffleNetV2CBAM",
     "create_shufflenet_v2",
     "create_shufflenet_v2_cbam",
+    "create_shufflenet_v2_x0_5",
 ]

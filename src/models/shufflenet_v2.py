@@ -113,3 +113,24 @@ def create_shufflenet_v2_cbam(
         reduction=reduction,
         kernel_size=kernel_size,
     )
+
+
+def create_shufflenet_v2_x0_5(
+    num_classes: int = 5,
+    pretrained: bool = True,
+) -> nn.Module:
+    """
+    Creates an ultra-lightweight ShuffleNetV2 x0.5 model for Edge-AI Knowledge Distillation.
+    """
+    if pretrained:
+        try:
+            from torchvision.models import ShuffleNet_V2_X0_5_Weights
+            weights = ShuffleNet_V2_X0_5_Weights.DEFAULT
+            model = models.shufflenet_v2_x0_5(weights=weights)
+        except (ImportError, AttributeError):
+            model = models.shufflenet_v2_x0_5(weights=None)
+    else:
+        model = models.shufflenet_v2_x0_5(weights=None)
+
+    model.fc = nn.Linear(1024, num_classes)
+    return model
