@@ -3,9 +3,10 @@ Evaluation Metrics Pipeline for Phyto Project.
 Groundnut Plant Disease Classification (Edge-AI Framework).
 
 Calculates accuracy, precision, recall, F1-score, confusion matrix,
-and per-class breakdown for model evaluation on test data using scikit-learn.
+per-class breakdown, and inference latency benchmarks.
 """
 
+import time
 from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import torch
@@ -154,3 +155,76 @@ def evaluate_model(
                 all_targets.extend(list(targets))
 
     return calculate_metrics(all_targets, all_preds, class_names=class_names)
+
+
+def benchmark_inference(
+    model: nn.Module,
+    dataloader: DataLoader[Any],
+    device: Optional[Union[torch.device, str]] = None,
+    num_warmup_batches: int = 5,
+) -> Dict[str, float]:
+    """
+    Measures model inference latency and frames-per-second (FPS) on a given DataLoader.
+    Excludes image loading and I/O time from inference latency calculation.
+
+    Args:
+        model: PyTorch model instance
+        dataloader: DataLoader providing input batches
+        device: Device to run inference on ('cuda' or 'cpu')
+        num_warmup_batches: Number of initial batches for GPU/CPU warmup
+
+    Returns:
+        Dict[str, float]: Dictionary containing average_latency_ms, median_latency_ms, and fps.
+    """
+    if device is None:
+        target_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    elif isinstance(device, str):
+        target_device = torch.device(device)
+    else:
+        target_device = device
+
+    model = model.to(target_device)
+    model.eval()
+
+    is_cuda = target_device.type == "cuda"
+    per_image_latencies_ms: List[float] = []
+
+    with torch.no_grad():
+        batch_idx = 0
+        for images, _ in dataloader:
+            images = images.to(target_device)
+            batch_size = images.size(0)
+
+            if batch_idx < num_warmup_batches:
+                _ = model(images)
+                if is_cuda:
+                    torch.cuda.synchronize()
+                batch_idx += 1
+                continue
+
+            if is_cuda:
+                torch.cuda.synchronize()
+
+            t0 = time.perf_counter()
+            _ = model(images)
+            if is_cuda:
+                torch.cuda.synchronize()
+            t1 = time.perf_counter()
+
+            batch_latency_ms = (t1 - t0) * 1000.0
+            per_image_latency_ms = batch_latency_ms / batch_size
+            per_image_latencies_ms.extend([per_image_latency_ms] * batch_size)
+            batch_idx += 1
+
+    if not per_image_latencies_ms:
+        raise ValueError("No inference samples available for benchmarking.")
+
+    avg_latency_ms = float(np.mean(per_image_latencies_ms))
+    median_latency_ms = float(np.median(per_image_latencies_ms))
+    fps = (1000.0 / avg_latency_ms) if avg_latency_ms > 0 else 0.0
+
+    return {
+        "average_latency_ms": round(avg_latency_ms, 4),
+        "median_latency_ms": round(median_latency_ms, 4),
+        "fps": round(fps, 2),
+    }
