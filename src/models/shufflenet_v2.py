@@ -17,7 +17,7 @@ class ShuffleNetV2CBAM(nn.Module):
 
     def __init__(
         self,
-        num_classes: int = 5,
+        num_classes: int = 6,
         pretrained: bool = True,
         reduction: int = 16,
         kernel_size: int = 7,
@@ -78,7 +78,7 @@ class ShuffleNetV2CBAM(nn.Module):
 
 
 def create_shufflenet_v2(
-    num_classes: int = 5,
+    num_classes: int = 6,
     pretrained: bool = True,
 ) -> nn.Module:
     """
@@ -99,7 +99,7 @@ def create_shufflenet_v2(
 
 
 def create_shufflenet_v2_cbam(
-    num_classes: int = 5,
+    num_classes: int = 6,
     pretrained: bool = True,
     reduction: int = 16,
     kernel_size: int = 7,
@@ -116,7 +116,7 @@ def create_shufflenet_v2_cbam(
 
 
 def create_shufflenet_v2_x0_5(
-    num_classes: int = 5,
+    num_classes: int = 6,
     pretrained: bool = True,
 ) -> nn.Module:
     """

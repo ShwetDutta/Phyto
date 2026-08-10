@@ -20,11 +20,13 @@ from sklearn.metrics import (
 
 DEFAULT_CLASS_NAMES: List[str] = [
     "early_leaf_spot",
+    "early_rust",
     "healthy_leaf",
     "late_leaf_spot",
     "nutrition_deficiency",
     "rust",
 ]
+
 
 
 def calculate_metrics(

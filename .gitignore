@@ -19,3 +19,5 @@ Dataset of groundnut plant leaf images for classification and detection/Raw_Data
 
 # Environment/secrets
 .env
+base_paper_extracted.txt
+
