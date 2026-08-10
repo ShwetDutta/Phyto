@@ -116,26 +116,26 @@ def run_audit(workspace_root: Path) -> dict:
     df_test['File Id Clean'] = df_test['File Id'].astype(str).str.strip()
     df_test['Diseases Name Clean'] = df_test['Diseases Name'].astype(str).str.strip()
 
-    train_rows = int(len(df_train))
-    test_rows = int(len(df_test))
+    train_rows = len(df_train)
+    test_rows = len(df_test)
 
     train_class_dist = {str(k): int(v) for k, v in df_train['Diseases Name Clean'].value_counts().to_dict().items()}
     test_class_dist = {str(k): int(v) for k, v in df_test['Diseases Name Clean'].value_counts().to_dict().items()}
 
-    train_unique_fids = int(df_train['File Id Clean'].nunique())
-    test_unique_fids = int(df_test['File Id Clean'].nunique())
+    train_unique_fids = int(df_train['File Id Clean'].nunique())  # pyright: ignore [reportArgumentType]
+    test_unique_fids = int(df_test['File Id Clean'].nunique())  # pyright: ignore [reportArgumentType]
 
     # Duplicates within Train
     train_dup_mask = df_train.duplicated(subset=['File Id Clean'], keep=False)
-    train_dups_df = df_train[train_dup_mask].sort_values(by='File Id Clean')
+    train_dups_df = df_train[train_dup_mask].sort_values(by='File Id Clean')  # pyright: ignore [reportCallIssue]
     train_dup_fids_count = int(df_train['File Id Clean'].duplicated().sum())
-    train_dup_rows_count = int(len(train_dups_df))
+    train_dup_rows_count = len(train_dups_df)
 
     # Duplicates within Test
     test_dup_mask = df_test.duplicated(subset=['File Id Clean'], keep=False)
-    test_dups_df = df_test[test_dup_mask].sort_values(by='File Id Clean')
+    test_dups_df = df_test[test_dup_mask].sort_values(by='File Id Clean')  # pyright: ignore [reportCallIssue]
     test_dup_fids_count = int(df_test['File Id Clean'].duplicated().sum())
-    test_dup_rows_count = int(len(test_dups_df))
+    test_dup_rows_count = len(test_dups_df)
 
     # File Ids appearing in both Train and Test
     train_fid_set = set(df_train['File Id Clean'])
@@ -163,7 +163,7 @@ def run_audit(workspace_root: Path) -> dict:
         cls = row['Diseases Name Clean']
         split = row['Train/Test']
         sno = row['S.No']
-        fid_lower = fid.lower()
+        fid_lower = str(fid).lower()
 
         # Categorize File Id pattern
         if fid_lower.startswith('dr_'):
@@ -224,7 +224,7 @@ def run_audit(workspace_root: Path) -> dict:
     early_rust_meta_count = len(all_meta[all_meta['Diseases Name Clean'] == 'Early Rust'])
     early_rust_matched_files = []
     for idx, row in all_meta[all_meta['Diseases Name Clean'] == 'Early Rust'].iterrows():
-        fid_lower = row['File Id Clean'].lower()
+        fid_lower = str(row['File Id Clean']).lower()
         if fid_lower in raw_file_by_name_lower:
             for rf in raw_file_by_name_lower[fid_lower]:
                 early_rust_matched_files.append((row['File Id Clean'], row['Train/Test'], rf))
@@ -240,27 +240,27 @@ def run_audit(workspace_root: Path) -> dict:
         "raw_data_scan": {
             "folders": sorted(folders_found),
             "folder_image_counts": {k: int(v) for k, v in folder_image_counts.items()},
-            "ext_counts": {str(k): int(v) for k, v in ext_counts.items()},
-            "total_images": int(total_images_raw),
+            "ext_counts": {str(k): v for k, v in ext_counts.items()},
+            "total_images": total_images_raw,
             "nested_folders": nested_folders,
-            "image_resolutions": {f"{w}x{h}": int(c) for (w, h), c in image_resolutions.items()},
-            "image_modes": {str(k): int(v) for k, v in image_modes.items()},
-            "corrupt_images_count": int(len(corrupt_images)),
-            "content_duplicates_count": int(len(content_duplicates)),
-            "cross_folder_filename_duplicates_count": int(len(filename_duplicates_raw)),
+            "image_resolutions": {f"{w}x{h}": c for (w, h), c in image_resolutions.items()},
+            "image_modes": {str(k): v for k, v in image_modes.items()},
+            "corrupt_images_count": len(corrupt_images),
+            "content_duplicates_count": len(content_duplicates),
+            "cross_folder_filename_duplicates_count": len(filename_duplicates_raw),
             "cross_folder_filename_duplicates": {k: v for k, v in filename_duplicates_raw.items()}
         },
         "early_rust_findings": {
             "raw_folder_exists": early_rust_raw_folder_exists,
-            "metadata_count": int(early_rust_meta_count),
-            "matched_to_raw_count": int(len(early_rust_matched_files)),
+            "metadata_count": early_rust_meta_count,
+            "matched_to_raw_count": len(early_rust_matched_files),
             "matched_files": early_rust_matched_files
         },
         "metadata_scan": {
             "sheets": list(sheet_names),
             "train_rows": train_rows,
             "test_rows": test_rows,
-            "total_rows": int(total_meta_records),
+            "total_rows": total_meta_records,
             "train_class_dist": train_class_dist,
             "test_class_dist": test_class_dist,
             "train_unique_fids": train_unique_fids,
@@ -269,16 +269,16 @@ def run_audit(workspace_root: Path) -> dict:
             "train_dup_rows_count": train_dup_rows_count,
             "test_dup_fids_count": test_dup_fids_count,
             "test_dup_rows_count": test_dup_rows_count,
-            "overlap_fids_count": int(len(overlap_fids)),
-            "pattern_counts": {str(k): int(v) for k, v in pattern_counts.items()}
+            "overlap_fids_count": len(overlap_fids),
+            "pattern_counts": {str(k): v for k, v in pattern_counts.items()}
         },
         "matching_analysis": {
-            "matched_metadata_records": int(matched_metadata_records),
-            "unmatched_metadata_records_count": int(len(unmatched_metadata_records)),
-            "matching_rate_meta_pct": round(float(matching_rate_meta), 2),
-            "matched_raw_files_count": int(len(matched_raw_files)),
-            "raw_data_coverage_pct": round(float((len(matched_raw_files) / total_images_raw) * 100), 2),
-            "images_absent_from_meta_count": int(len(images_absent_from_meta)),
+            "matched_metadata_records": matched_metadata_records,
+            "unmatched_metadata_records_count": len(unmatched_metadata_records),
+            "matching_rate_meta_pct": round(matching_rate_meta, 2),
+            "matched_raw_files_count": len(matched_raw_files),
+            "raw_data_coverage_pct": round((len(matched_raw_files) / total_images_raw) * 100, 2),
+            "images_absent_from_meta_count": len(images_absent_from_meta),
             "sample_images_absent_from_meta": images_absent_from_meta[:15]
         },
         "train_test_overlap_analysis": overlap_analysis

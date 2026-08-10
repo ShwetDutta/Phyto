@@ -154,6 +154,10 @@ def build_manifest(workspace_root: Path):
     ext_dict = {str(k): int(v) for k, v in df_manifest['extension'].value_counts().to_dict().items()}
     mode_dict = {str(k): int(v) for k, v in df_manifest['image_mode'].value_counts().to_dict().items()}
 
+    min_size = int(df_manifest['file_size_bytes'].min())  # pyright: ignore [reportArgumentType]
+    max_size = int(df_manifest['file_size_bytes'].max())  # pyright: ignore [reportArgumentType]
+    mean_size = int(float(df_manifest['file_size_bytes'].mean()))  # pyright: ignore [reportArgumentType]
+
     # Build Markdown Summary Report
     summary_file = output_dir / "physical_dataset_summary.md"
 
@@ -195,7 +199,7 @@ def build_manifest(workspace_root: Path):
 - **Image Modes**: {mode_dict}
 - **Image Dimensions (Width x Height)**:
   - `1200 x 800`: **{image_dimensions.get((1200, 800), 0)} images** (100.00%)
-- **File Size Range**: Min = {df_manifest['file_size_bytes'].min():,} bytes, Max = {df_manifest['file_size_bytes'].max():,} bytes, Mean = {int(df_manifest['file_size_bytes'].mean()):,} bytes
+- **File Size Range**: Min = {min_size:,} bytes, Max = {max_size:,} bytes, Mean = {mean_size:,} bytes
 
 ---
 

@@ -134,20 +134,20 @@ def validate_split_manifest(df: pd.DataFrame) -> bool:
         )
 
     # 4. Unique and non-null image_id check
-    if len(df['image_id']) != 3058 or df['image_id'].isnull().any():
+    if len(df['image_id']) != 3058 or bool(df['image_id'].isnull().any()):
         raise ValueError("image_id column contains nulls or missing entries.")
     if df['image_id'].nunique() != 3058:
         raise ValueError(f"Duplicate image_id detected! Unique count: {df['image_id'].nunique()}")
 
     # 5. Unique and non-null relative_path check
-    if len(df['relative_path']) != 3058 or df['relative_path'].isnull().any():
+    if len(df['relative_path']) != 3058 or bool(df['relative_path'].isnull().any()):
         raise ValueError("relative_path column contains nulls or missing entries.")
     if df['relative_path'].nunique() != 3058:
         raise ValueError(f"Duplicate relative_path detected! Unique count: {df['relative_path'].nunique()}")
 
     # 6. Exactly one split per row check
     valid_splits = {'train', 'validation', 'test'}
-    if df['split'].isnull().any() or (df['split'].astype(str).str.strip() == '').any():
+    if bool(df['split'].isnull().any()) or bool((df['split'].astype(str).str.strip() == '').any()):
         raise ValueError("Empty or null split labels detected!")
     actual_splits = set(df['split'].unique())
     invalid_splits = actual_splits - valid_splits
