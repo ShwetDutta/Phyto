@@ -4,12 +4,19 @@ Groundnut Plant Disease Classification (Edge-AI Framework).
 """
 
 import argparse
+import sys
 import time
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 import numpy as np
 import torch
 
 from src.models import create_shufflenet_v2_x0_5
+
 
 
 def export_to_onnx(

@@ -7,7 +7,13 @@ Distills feature representation from trained ResNet50 + CBAM Teacher to ShuffleN
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -18,6 +24,7 @@ from src.models import create_resnet50_cbam, create_shufflenet_v2_x0_5
 from src.training.distillation import train_distillation_model
 from src.training.train import set_seed
 from src.evaluation.metrics import evaluate_model
+
 
 
 def get_default_transforms():

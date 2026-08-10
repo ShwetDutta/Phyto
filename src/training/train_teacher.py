@@ -5,7 +5,13 @@ Groundnut Plant Disease Classification (Edge-AI Framework).
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -15,6 +21,7 @@ from src.data.phyto_dataset import PhytoDataset, load_split_manifest
 from src.models import create_resnet50_cbam
 from src.training.train import set_seed, train_model
 from src.evaluation.metrics import evaluate_model
+
 
 
 def get_default_transforms():

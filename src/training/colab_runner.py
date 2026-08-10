@@ -16,15 +16,25 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Auto-resolve repository root into sys.path for Google Colab
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+
 
 def run_cmd(cmd: list[str]) -> None:
     cmd_str = " ".join(cmd)
     print(f"\n==========================================")
     print(f"Executing: {cmd_str}")
     print(f"==========================================\n")
-    res = subprocess.run(cmd, check=True)
+    import os
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{REPO_ROOT}:{env.get('PYTHONPATH', '')}"
+    res = subprocess.run(cmd, check=True, env=env, cwd=str(REPO_ROOT))
     if res.returncode != 0:
         raise RuntimeError(f"Command failed with exit code {res.returncode}: {cmd_str}")
+
 
 
 def main():
