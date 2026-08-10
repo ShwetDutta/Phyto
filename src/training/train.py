@@ -2,17 +2,20 @@
 Training and Inference Benchmarking Pipeline for Phyto Project.
 Groundnut Plant Disease Classification (Edge-AI Framework).
 
-Provides model training, seed initialization, and inference latency benchmarking.
+Provides model training with Colab-resumable checkpointing, seed initialization,
+checkpoint loading, and inference latency benchmarking.
 """
 
 import random
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
+from src.evaluation.metrics import benchmark_inference
 
 
 def set_seed(seed: int = 42) -> None:
@@ -32,6 +35,89 @@ def set_seed(seed: int = 42) -> None:
         torch.backends.cudnn.benchmark = False
 
 
+def load_checkpoint(
+    checkpoint_path: Union[str, Path],
+    model: nn.Module,
+    optimizer: Optional[torch.optim.Optimizer] = None,
+    scheduler: Optional[Any] = None,
+    device: Optional[Union[torch.device, str]] = None,
+) -> Tuple[
+    nn.Module,
+    Optional[torch.optim.Optimizer],
+    Optional[Any],
+    int,
+    float,
+    Dict[str, List[float]],
+]:
+    """
+    Loads a model checkpoint and restores model, optimizer, and scheduler states.
+
+    Args:
+        checkpoint_path: Path to checkpoint file
+        model: PyTorch model instance to load weights into
+        optimizer: Optional PyTorch optimizer to restore state
+        scheduler: Optional learning rate scheduler to restore state
+        device: Target execution device ('cuda' or 'cpu'); auto-detects if None
+
+    Returns:
+        Tuple containing:
+            - model: Restored PyTorch model
+            - optimizer: Restored optimizer (or None if not provided)
+            - scheduler: Restored scheduler (or None if not provided)
+            - start_epoch: Int representing the completed epoch count from checkpoint
+            - best_validation_accuracy: Best validation accuracy recorded
+            - history: Dictionary of training history metrics
+    """
+    ckpt_p = Path(checkpoint_path)
+    if not ckpt_p.exists():
+        raise FileNotFoundError(f"Checkpoint file not found at: {ckpt_p.resolve()}")
+
+    if device is None:
+        target_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    elif isinstance(device, str):
+        target_device = torch.device(device)
+    else:
+        target_device = device
+
+    checkpoint = torch.load(ckpt_p, map_location=target_device, weights_only=False)
+
+    model = model.to(target_device)
+    if "model_state_dict" in checkpoint:
+        model.load_state_dict(checkpoint["model_state_dict"])
+    else:
+        raise KeyError("Checkpoint missing required key 'model_state_dict'")
+
+    if (
+        optimizer is not None
+        and "optimizer_state_dict" in checkpoint
+        and checkpoint["optimizer_state_dict"] is not None
+    ):
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    if (
+        scheduler is not None
+        and "scheduler_state_dict" in checkpoint
+        and checkpoint["scheduler_state_dict"] is not None
+    ):
+        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+
+    start_epoch = int(checkpoint.get("epoch", 0))
+    best_val_acc = float(checkpoint.get("best_validation_accuracy", 0.0))
+    history = checkpoint.get(
+        "training_history",
+        {
+            "train_loss": [],
+            "train_accuracy": [],
+            "validation_loss": [],
+            "validation_accuracy": [],
+            "learning_rate": [],
+            "epoch_time": [],
+        },
+    )
+
+    return model, optimizer, scheduler, start_epoch, best_val_acc, history
+
+
 def train_model(
     model: nn.Module,
     train_loader: DataLoader[Any],
@@ -42,10 +128,13 @@ def train_model(
     device: Optional[Union[torch.device, str]] = None,
     epochs: int = 10,
     checkpoint_path: Optional[Union[str, Path]] = None,
+    last_checkpoint_path: Optional[Union[str, Path]] = None,
+    resume_from_checkpoint: Optional[Union[str, Path]] = None,
 ) -> Dict[str, List[float]]:
     """
     Executes model training loop over specified epochs, tracks performance history,
-    and saves the best model checkpoint based on validation accuracy.
+    saves the best model checkpoint on validation improvement, and saves a last checkpoint
+    after every completed epoch for Colab resilience.
 
     Args:
         model: PyTorch classification model instance
@@ -55,8 +144,10 @@ def train_model(
         optimizer: PyTorch optimizer instance
         scheduler: Optional learning rate scheduler
         device: Execution device ('cuda' or 'cpu'); auto-detects if None
-        epochs: Number of training epochs
-        checkpoint_path: Optional file path to save best model checkpoint
+        epochs: Total target training epochs
+        checkpoint_path: Path to save the best model checkpoint
+        last_checkpoint_path: Optional explicit path to save the last epoch checkpoint
+        resume_from_checkpoint: Optional checkpoint path to resume training from
 
     Returns:
         Dict[str, List[float]]: Training history dictionary containing epoch metrics.
@@ -80,8 +171,47 @@ def train_model(
     }
 
     best_val_acc: float = -1.0
+    start_epoch: int = 1
 
-    for epoch in range(1, epochs + 1):
+    # Resume from checkpoint if requested
+    if resume_from_checkpoint is not None:
+        (
+            model,
+            optimizer_loaded,
+            scheduler_loaded,
+            completed_epoch,
+            loaded_best_val_acc,
+            loaded_history,
+        ) = load_checkpoint(
+            checkpoint_path=resume_from_checkpoint,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            device=target_device,
+        )
+        if optimizer_loaded is not None:
+            optimizer = optimizer_loaded
+        if scheduler_loaded is not None:
+            scheduler = scheduler_loaded
+
+        start_epoch = completed_epoch + 1
+        best_val_acc = loaded_best_val_acc
+        history = loaded_history
+        print(f"Resuming training from epoch {start_epoch} (completed {completed_epoch}/{epochs}).")
+
+    if start_epoch > epochs:
+        print(f"Training already completed ({start_epoch - 1}/{epochs} epochs). Returning history.")
+        return history
+
+    # Determine last checkpoint path for epoch-level saving
+    target_last_path: Optional[Path] = None
+    if last_checkpoint_path is not None:
+        target_last_path = Path(last_checkpoint_path)
+    elif checkpoint_path is not None:
+        cp = Path(checkpoint_path)
+        target_last_path = cp.with_name(f"{cp.stem}_last{cp.suffix}")
+
+    for epoch in range(start_epoch, epochs + 1):
         start_time = time.perf_counter()
 
         # Training Phase
@@ -153,18 +283,26 @@ def train_model(
         is_best = epoch_val_acc > best_val_acc
         if is_best:
             best_val_acc = epoch_val_acc
-            if checkpoint_path is not None:
-                ckpt_p = Path(checkpoint_path)
-                ckpt_p.parent.mkdir(parents=True, exist_ok=True)
-                checkpoint_data: Dict[str, Any] = {
-                    "epoch": epoch,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None,
-                    "best_validation_accuracy": best_val_acc,
-                    "training_history": history,
-                }
-                torch.save(checkpoint_data, ckpt_p)
+
+        checkpoint_data: Dict[str, Any] = {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None,
+            "best_validation_accuracy": best_val_acc,
+            "training_history": history,
+        }
+
+        # Save BEST model whenever validation accuracy improves
+        if is_best and checkpoint_path is not None:
+            ckpt_p = Path(checkpoint_path)
+            ckpt_p.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(checkpoint_data, ckpt_p)
+
+        # Save LAST checkpoint after every completed epoch
+        if target_last_path is not None:
+            target_last_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(checkpoint_data, target_last_path)
 
         best_flag = " [BEST]" if is_best else ""
         print(
@@ -177,4 +315,4 @@ def train_model(
     return history
 
 
-from src.evaluation.metrics import benchmark_inference
+__all__ = ["set_seed", "load_checkpoint", "train_model", "benchmark_inference"]
