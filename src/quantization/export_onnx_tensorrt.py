@@ -28,6 +28,15 @@ def export_to_onnx(
     target_p = Path(onnx_path)
     target_p.parent.mkdir(parents=True, exist_ok=True)
 
+    # Ensure required ONNX export libraries are installed
+    try:
+        import onnx
+        import onnxscript
+    except ImportError:
+        print("[Notice] Installing missing `onnx`, `onnxscript`, and `onnxruntime` packages for export...")
+        import subprocess
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "onnx", "onnxscript", "onnxruntime"], check=True)
+
     dummy_input = torch.randn(*input_shape, device=device)
     model.to(device)
     model.eval()

@@ -31,3 +31,6 @@ torchvision
 tqdm
 typing-extensions
 tzdata
+onnx
+onnxscript
+onnxruntime
