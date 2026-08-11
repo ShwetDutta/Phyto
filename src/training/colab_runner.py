@@ -48,6 +48,7 @@ def main():
     parser.add_argument("--kd-epochs", type=int, default=15)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--force", action="store_true", help="Force re-training even if checkpoints exist")
     args = parser.parse_args()
 
     import torch
@@ -85,44 +86,53 @@ def main():
         run_cmd([python_exe, "-m", "src.data.create_new_dataset_split", "--seed", str(args.seed)])
 
     # Stage 2: Train Baseline ShuffleNetV2 x0.5
-    print("\n>>> STAGE 1/5: Training Baseline ShuffleNetV2 x0.5...")
-    run_cmd([
-        python_exe, "-m", "src.training.train_baseline",
-        "--manifest-path", str(manifest_p),
-        "--raw-data-root", args.raw_data_root,
-        "--epochs", str(args.baseline_epochs),
-        "--batch-size", str(args.batch_size),
-        "--seed", str(args.seed),
-        "--checkpoint-path", str(base_ckpt),
-        "--output-metrics-json", str(base_json),
-    ])
+    print("\n>>> STAGE 1/5: Baseline ShuffleNetV2 x0.5...")
+    if base_ckpt.exists() and base_json.exists() and not args.force:
+        print(f"[Notice] Baseline checkpoint already exists at {base_ckpt}. Skipping training!")
+    else:
+        run_cmd([
+            python_exe, "-m", "src.training.train_baseline",
+            "--manifest-path", str(manifest_p),
+            "--raw-data-root", args.raw_data_root,
+            "--epochs", str(args.baseline_epochs),
+            "--batch-size", str(args.batch_size),
+            "--seed", str(args.seed),
+            "--checkpoint-path", str(base_ckpt),
+            "--output-metrics-json", str(base_json),
+        ])
 
     # Stage 3: Train ResNet50 + CBAM Teacher
-    print("\n>>> STAGE 2/5: Training High-Capacity ResNet50 + CBAM Teacher...")
-    run_cmd([
-        python_exe, "-m", "src.training.train_teacher",
-        "--manifest-path", str(manifest_p),
-        "--raw-data-root", args.raw_data_root,
-        "--epochs", str(args.teacher_epochs),
-        "--batch-size", str(args.batch_size),
-        "--seed", str(args.seed),
-        "--checkpoint-path", str(teacher_ckpt),
-        "--output-metrics-json", str(teacher_json),
-    ])
+    print("\n>>> STAGE 2/5: High-Capacity ResNet50 + CBAM Teacher...")
+    if teacher_ckpt.exists() and teacher_json.exists() and not args.force:
+        print(f"[Notice] Teacher checkpoint already exists at {teacher_ckpt}. Skipping training!")
+    else:
+        run_cmd([
+            python_exe, "-m", "src.training.train_teacher",
+            "--manifest-path", str(manifest_p),
+            "--raw-data-root", args.raw_data_root,
+            "--epochs", str(args.teacher_epochs),
+            "--batch-size", str(args.batch_size),
+            "--seed", str(args.seed),
+            "--checkpoint-path", str(teacher_ckpt),
+            "--output-metrics-json", str(teacher_json),
+        ])
 
     # Stage 4: Distill ResNet50 + CBAM Teacher into ShuffleNetV2 x0.5 Student
-    print("\n>>> STAGE 3/5: Executing Knowledge Distillation into Student...")
-    run_cmd([
-        python_exe, "-m", "src.training.train_kd_student",
-        "--manifest-path", str(manifest_p),
-        "--raw-data-root", args.raw_data_root,
-        "--teacher-checkpoint", str(teacher_ckpt),
-        "--epochs", str(args.kd_epochs),
-        "--batch-size", str(args.batch_size),
-        "--seed", str(args.seed),
-        "--checkpoint-path", str(kd_ckpt),
-        "--output-metrics-json", str(kd_json),
-    ])
+    print("\n>>> STAGE 3/5: Knowledge Distillation into Student...")
+    if kd_ckpt.exists() and kd_json.exists() and not args.force:
+        print(f"[Notice] KD Student checkpoint already exists at {kd_ckpt}. Skipping training!")
+    else:
+        run_cmd([
+            python_exe, "-m", "src.training.train_kd_student",
+            "--manifest-path", str(manifest_p),
+            "--raw-data-root", args.raw_data_root,
+            "--teacher-checkpoint", str(teacher_ckpt),
+            "--epochs", str(args.kd_epochs),
+            "--batch-size", str(args.batch_size),
+            "--seed", str(args.seed),
+            "--checkpoint-path", str(kd_ckpt),
+            "--output-metrics-json", str(kd_json),
+        ])
 
     # Stage 5: INT8 Quantization & Benchmarking
     print("\n>>> STAGE 4/5: Performing INT8 Dynamic Quantization & Benchmarking...")
