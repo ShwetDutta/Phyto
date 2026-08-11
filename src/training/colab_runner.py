@@ -27,10 +27,11 @@ def run_cmd(cmd: list[str]) -> None:
     cmd_str = " ".join(cmd)
     print(f"\n==========================================")
     print(f"Executing: {cmd_str}")
-    print(f"==========================================\n")
+    print(f"==========================================\n", flush=True)
     import os
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{REPO_ROOT}:{env.get('PYTHONPATH', '')}"
+    env["PYTHONUNBUFFERED"] = "1"
     res = subprocess.run(cmd, check=True, env=env, cwd=str(REPO_ROOT))
     if res.returncode != 0:
         raise RuntimeError(f"Command failed with exit code {res.returncode}: {cmd_str}")
@@ -48,6 +49,16 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
+
+    import torch
+    print("=======================================================")
+    print("PHYTO MASTER PIPELINE INITIALIZATION")
+    if torch.cuda.is_available():
+        print(f"Device: GPU ({torch.cuda.get_device_name(0)})")
+    else:
+        print("WARNING: CUDA GPU NOT DETECTED! Running on CPU will be extremely slow.")
+        print("Switch runtime in Colab: Runtime -> Change runtime type -> T4 GPU")
+    print("=======================================================\n", flush=True)
 
     ckpt_dir = Path(args.checkpoint_dir)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
