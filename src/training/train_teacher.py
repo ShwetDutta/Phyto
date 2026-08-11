@@ -18,15 +18,15 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.data.phyto_dataset import PhytoDataset, load_split_manifest
-from src.models import create_resnet50_cbam
+from src.models import create_resnet50_cbam, create_efficientnet_b0
 from src.training.train import set_seed, train_model
 from src.evaluation.metrics import evaluate_model
 
 
 
-def get_default_transforms():
+def get_default_transforms(image_size: int = 256):
     train_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.3),
         transforms.RandomRotation(degrees=15),
@@ -36,7 +36,7 @@ def get_default_transforms():
     ])
 
     val_test_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -45,11 +45,13 @@ def get_default_transforms():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train CBAM ResNet50 Teacher Model")
+    parser = argparse.ArgumentParser(description="Train Teacher Model (ResNet50+CBAM or EfficientNet-B0)")
     parser.add_argument("--manifest-path", type=str, default="results/new_dataset_manifest/groundnut_dataset_split_manifest.csv")
     parser.add_argument("--raw-data-root", type=str, default=r"c:\Users\Shwet\Desktop\Groundnut_Leaf_dataset")
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--teacher-type", type=str, choices=["resnet50_cbam", "efficientnet_b0"], default="resnet50_cbam")
+    parser.add_argument("--image-size", type=int, default=256)
+    parser.add_argument("--epochs", type=int, default=25)
+    parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
@@ -64,7 +66,7 @@ def main():
     val_df = load_split_manifest(args.manifest_path, split="validation")
     test_df = load_split_manifest(args.manifest_path, split="test")
 
-    train_tf, val_test_tf = get_default_transforms()
+    train_tf, val_test_tf = get_default_transforms(image_size=args.image_size)
 
     train_dataset = PhytoDataset(train_df, raw_data_root=args.raw_data_root, transform=train_tf)
     val_dataset = PhytoDataset(val_df, raw_data_root=args.raw_data_root, transform=val_test_tf)
@@ -75,9 +77,13 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Training ResNet50 + CBAM Teacher on device: {device}")
+    print(f"Training Teacher ({args.teacher_type}) on device: {device} ({args.image_size}x{args.image_size}, Epochs={args.epochs})")
 
-    model = create_resnet50_cbam(num_classes=6, pretrained=True)
+    if args.teacher_type == "efficientnet_b0":
+        model = create_efficientnet_b0(num_classes=6, pretrained=True)
+    else:
+        model = create_resnet50_cbam(num_classes=6, pretrained=True)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
@@ -104,7 +110,7 @@ def main():
         print(f"Loaded best checkpoint from {ckpt_path} (Val Acc: {checkpoint.get('best_validation_accuracy', 0.0):.2f}%)")
 
     test_metrics = evaluate_model(model, test_loader, device=device)
-    print("\n=== ResNet50 + CBAM Teacher Test Results ===")
+    print(f"\n=== Teacher ({args.teacher_type}) Test Results ===")
     print(f"Test Accuracy: {test_metrics['accuracy'] * 100:.2f}%")
     print(f"Weighted F1:   {test_metrics['f1_score'] * 100:.2f}%")
     print(f"Macro F1:      {test_metrics['macro_f1_score'] * 100:.2f}%")
@@ -112,8 +118,20 @@ def main():
 
     out_metrics_p = Path(args.output_metrics_json)
     out_metrics_p.parent.mkdir(parents=True, exist_ok=True)
+    out_data = {
+        "model_name": f"Teacher ({args.teacher_type})",
+        "config": {
+            "teacher_type": args.teacher_type,
+            "image_size": args.image_size,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+        },
+        "test_metrics": test_metrics,
+        "history": history,
+    }
     with open(out_metrics_p, "w") as f:
-        json.dump({"test_metrics": test_metrics, "history": history}, f, indent=2)
+        json.dump(out_data, f, indent=2)
 
     print(f"Saved teacher metrics to {out_metrics_p}")
 

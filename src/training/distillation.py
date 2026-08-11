@@ -19,22 +19,33 @@ from src.training.train import load_checkpoint
 
 class DistillationLoss(nn.Module):
     """
-    Knowledge Distillation Loss combining Cross-Entropy (hard ground-truth labels)
-    and KL Divergence (soft teacher logits scaled by temperature T).
+    Knowledge Distillation Loss combining:
+    1. Hard Cross-Entropy (ground-truth labels)
+    2. Soft KL Divergence (teacher logits scaled by temperature T)
+    3. Optional Feature-Level MSE Loss (intermediate representation matching)
     """
 
-    def __init__(self, alpha: float = 0.7, temperature: float = 4.0) -> None:
+    def __init__(
+        self,
+        alpha: float = 0.7,
+        temperature: float = 4.0,
+        feature_weight: float = 0.0,
+    ) -> None:
         super().__init__()
         self.alpha = alpha
         self.temperature = temperature
+        self.feature_weight = feature_weight
         self.ce_loss = nn.CrossEntropyLoss()
         self.kl_div_loss = nn.KLDivLoss(reduction="batchmean")
+        self.mse_loss = nn.MSELoss()
 
     def forward(
         self,
         student_logits: torch.Tensor,
         teacher_logits: torch.Tensor,
         labels: torch.Tensor,
+        student_feat: Optional[torch.Tensor] = None,
+        teacher_feat: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Calculates combined distillation loss.
@@ -45,7 +56,19 @@ class DistillationLoss(nn.Module):
         soft_teacher = F.softmax(teacher_logits / self.temperature, dim=1)
         distill_loss = self.kl_div_loss(soft_student, soft_teacher) * (self.temperature ** 2)
 
-        return (1.0 - self.alpha) * hard_loss + self.alpha * distill_loss
+        total_loss = (1.0 - self.alpha) * hard_loss + self.alpha * distill_loss
+
+        if self.feature_weight > 0.0 and student_feat is not None and teacher_feat is not None:
+            # Global Average Pooling on feature maps if 4D tensors
+            if student_feat.dim() == 4:
+                student_feat = F.adaptive_avg_pool2d(student_feat, (1, 1)).flatten(1)
+            if teacher_feat.dim() == 4:
+                teacher_feat = F.adaptive_avg_pool2d(teacher_feat, (1, 1)).flatten(1)
+            feat_loss = self.mse_loss(student_feat, teacher_feat)
+            total_loss = total_loss + self.feature_weight * feat_loss
+
+        return total_loss
+
 
 
 def train_distillation_model(

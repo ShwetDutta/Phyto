@@ -26,9 +26,9 @@ from src.evaluation.metrics import evaluate_model
 
 
 
-def get_default_transforms():
+def get_default_transforms(image_size: int = 256):
     train_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.3),
         transforms.RandomRotation(degrees=15),
@@ -38,7 +38,7 @@ def get_default_transforms():
     ])
 
     val_test_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -50,9 +50,12 @@ def main():
     parser = argparse.ArgumentParser(description="Train ShuffleNetV2 x0.5 Baseline Model")
     parser.add_argument("--manifest-path", type=str, default="results/new_dataset_manifest/groundnut_dataset_split_manifest.csv")
     parser.add_argument("--raw-data-root", type=str, default=r"c:\Users\Shwet\Desktop\Groundnut_Leaf_dataset")
-    parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--image-size", type=int, default=256, help="Input resolution (default: 256 for paper match)")
+    parser.add_argument("--epochs", type=int, default=35, help="Number of epochs (default: 35 for paper match)")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size (default: 16)")
+    parser.add_argument("--optimizer", type=str, choices=["sgd", "adamw"], default="sgd", help="Optimizer type")
+    parser.add_argument("--lr", type=float, default=0.01, help="Learning rate (default: 0.01 for SGD)")
+    parser.add_argument("--momentum", type=float, default=0.9, help="SGD momentum (default: 0.9)")
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--checkpoint-path", type=str, default="results/checkpoints/baseline_shufflenet_v05.pth")
@@ -66,7 +69,7 @@ def main():
     val_df = load_split_manifest(args.manifest_path, split="validation")
     test_df = load_split_manifest(args.manifest_path, split="test")
 
-    train_tf, val_test_tf = get_default_transforms()
+    train_tf, val_test_tf = get_default_transforms(image_size=args.image_size)
 
     train_dataset = PhytoDataset(train_df, raw_data_root=args.raw_data_root, transform=train_tf)
     val_dataset = PhytoDataset(val_df, raw_data_root=args.raw_data_root, transform=val_test_tf)
@@ -77,11 +80,16 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Training ShuffleNetV2 x0.5 Baseline on device: {device}")
+    print(f"Training ShuffleNetV2 x0.5 Baseline on device: {device} ({args.image_size}x{args.image_size}, {args.optimizer.upper()}, LR={args.lr}, Epochs={args.epochs})")
 
     model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
+    if args.optimizer.lower() == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    else:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     ckpt_path = Path(args.checkpoint_path)
@@ -113,10 +121,25 @@ def main():
 
     out_metrics_p = Path(args.output_metrics_json)
     out_metrics_p.parent.mkdir(parents=True, exist_ok=True)
+    out_data = {
+        "model_name": "ShuffleNetV2 x0.5 Baseline",
+        "config": {
+            "image_size": args.image_size,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "optimizer": args.optimizer,
+            "lr": args.lr,
+            "momentum": args.momentum,
+            "weight_decay": args.weight_decay,
+        },
+        "test_metrics": test_metrics,
+        "history": history,
+    }
     with open(out_metrics_p, "w") as f:
-        json.dump({"test_metrics": test_metrics, "history": history}, f, indent=2)
+        json.dump(out_data, f, indent=2)
 
     print(f"Saved baseline metrics to {out_metrics_p}")
+
 
 
 if __name__ == "__main__":

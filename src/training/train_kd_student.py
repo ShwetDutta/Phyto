@@ -20,16 +20,16 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.data.phyto_dataset import PhytoDataset, load_split_manifest
-from src.models import create_resnet50_cbam, create_shufflenet_v2_x0_5
+from src.models import create_resnet50_cbam, create_efficientnet_b0, create_shufflenet_v2_x0_5
 from src.training.distillation import train_distillation_model
 from src.training.train import set_seed
 from src.evaluation.metrics import evaluate_model
 
 
 
-def get_default_transforms():
+def get_default_transforms(image_size: int = 256):
     train_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.RandomVerticalFlip(p=0.3),
         transforms.RandomRotation(degrees=15),
@@ -39,7 +39,7 @@ def get_default_transforms():
     ])
 
     val_test_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -51,9 +51,11 @@ def main():
     parser = argparse.ArgumentParser(description="Train ShuffleNetV2 x0.5 Student via Knowledge Distillation")
     parser.add_argument("--manifest-path", type=str, default="results/new_dataset_manifest/groundnut_dataset_split_manifest.csv")
     parser.add_argument("--raw-data-root", type=str, default=r"c:\Users\Shwet\Desktop\Groundnut_Leaf_dataset")
+    parser.add_argument("--teacher-type", type=str, choices=["resnet50_cbam", "efficientnet_b0"], default="resnet50_cbam")
     parser.add_argument("--teacher-checkpoint", type=str, default="results/checkpoints/cbam_teacher_resnet50.pth")
-    parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--image-size", type=int, default=256)
+    parser.add_argument("--epochs", type=int, default=25)
+    parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--temperature", type=float, default=4.0)
@@ -70,7 +72,7 @@ def main():
     val_df = load_split_manifest(args.manifest_path, split="validation")
     test_df = load_split_manifest(args.manifest_path, split="test")
 
-    train_tf, val_test_tf = get_default_transforms()
+    train_tf, val_test_tf = get_default_transforms(image_size=args.image_size)
 
     train_dataset = PhytoDataset(train_df, raw_data_root=args.raw_data_root, transform=train_tf)
     val_dataset = PhytoDataset(val_df, raw_data_root=args.raw_data_root, transform=val_test_tf)
@@ -81,10 +83,14 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Executing Knowledge Distillation on device: {device}")
+    print(f"Executing Knowledge Distillation ({args.teacher_type} -> ShuffleNetV2 x0.5) on device: {device}")
 
     # Load teacher model
-    teacher_model = create_resnet50_cbam(num_classes=6, pretrained=False)
+    if args.teacher_type == "efficientnet_b0":
+        teacher_model = create_efficientnet_b0(num_classes=6, pretrained=False)
+    else:
+        teacher_model = create_resnet50_cbam(num_classes=6, pretrained=False)
+
     t_ckpt_p = Path(args.teacher_checkpoint)
     if not t_ckpt_p.exists():
         raise FileNotFoundError(f"Teacher checkpoint not found at: {t_ckpt_p.resolve()}")
@@ -93,7 +99,7 @@ def main():
     teacher_model.load_state_dict(t_ckpt["model_state_dict"])
     teacher_model.to(device)
     teacher_model.eval()
-    print(f"Successfully loaded ResNet50 + CBAM Teacher weights from {t_ckpt_p}")
+    print(f"Successfully loaded {args.teacher_type} Teacher weights from {t_ckpt_p}")
 
     # Instantiate student model
     student_model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
