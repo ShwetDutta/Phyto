@@ -20,7 +20,13 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.data.phyto_dataset import PhytoDataset, load_split_manifest
-from src.models import create_resnet50_cbam, create_efficientnet_b0, create_shufflenet_v2_x0_5
+from src.models import (
+    create_resnet50_cbam,
+    create_efficientnet_b0,
+    create_shufflenet_v2_x0_5,
+    create_shufflenet_v2_x0_5_cbam,
+    FeatureKDAdapter,
+)
 from src.training.distillation import train_distillation_model
 from src.training.train import set_seed
 from src.evaluation.metrics import evaluate_model
@@ -51,8 +57,9 @@ def main():
     parser = argparse.ArgumentParser(description="Train ShuffleNetV2 x0.5 Student via Knowledge Distillation")
     parser.add_argument("--manifest-path", type=str, default="results/new_dataset_manifest/groundnut_dataset_split_manifest.csv")
     parser.add_argument("--raw-data-root", type=str, default=r"c:\Users\Shwet\Desktop\Groundnut_Leaf_dataset")
-    parser.add_argument("--teacher-type", type=str, choices=["resnet50_cbam", "efficientnet_b0"], default="resnet50_cbam")
-    parser.add_argument("--teacher-checkpoint", type=str, default="results/checkpoints/cbam_teacher_resnet50.pth")
+    parser.add_argument("--teacher-type", type=str, choices=["resnet50_cbam", "efficientnet_b0"], default="efficientnet_b0")
+    parser.add_argument("--teacher-checkpoint", type=str, default="results/checkpoints/teacher_efficientnet_b0.pth")
+    parser.add_argument("--student-type", type=str, choices=["shufflenet_v05", "shufflenet_v05_cbam"], default="shufflenet_v05")
     parser.add_argument("--image-size", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=25)
     parser.add_argument("--batch-size", type=int, default=16)
@@ -60,8 +67,10 @@ def main():
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--temperature", type=float, default=4.0)
     parser.add_argument("--alpha", type=float, default=0.7)
+    parser.add_argument("--feature-weight", type=float, default=0.0)
+    parser.add_argument("--feature-loss-type", type=str, choices=["mse", "cosine"], default="mse")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--checkpoint-path", type=str, default="results/checkpoints/kd_shufflenet_v05_from_resnet50.pth")
+    parser.add_argument("--checkpoint-path", type=str, default="results/checkpoints/kd_shufflenet_v05_from_efficientnet.pth")
     parser.add_argument("--output-metrics-json", type=str, default="results/checkpoints/kd_shufflenet_v05_metrics.json")
     parser.add_argument("--resume-from-checkpoint", type=str, default=None, help="Path to checkpoint file to resume training from")
     args = parser.parse_args()
@@ -84,13 +93,16 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Executing Knowledge Distillation ({args.teacher_type} -> ShuffleNetV2 x0.5) on device: {device}")
+    print(f"Executing Knowledge Distillation ({args.teacher_type} -> {args.student_type}) on device: {device}")
+    print(f"Distill Config: Alpha={args.alpha}, Temperature={args.temperature}, FeatureWeight={args.feature_weight}")
 
     # Load teacher model
     if args.teacher_type == "efficientnet_b0":
         teacher_model = create_efficientnet_b0(num_classes=6, pretrained=False)
+        t_channels = 1280
     else:
         teacher_model = create_resnet50_cbam(num_classes=6, pretrained=False)
+        t_channels = 2048
 
     t_ckpt_p = Path(args.teacher_checkpoint)
     if not t_ckpt_p.exists():
@@ -103,8 +115,21 @@ def main():
     print(f"Successfully loaded {args.teacher_type} Teacher weights from {t_ckpt_p}")
 
     # Instantiate student model
-    student_model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
-    optimizer = torch.optim.AdamW(student_model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    if args.student_type == "shufflenet_v05_cbam":
+        student_model = create_shufflenet_v2_x0_5_cbam(num_classes=6, pretrained=True)
+    else:
+        student_model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
+
+    # Feature Adapter
+    feature_adapter = None
+    if args.feature_weight > 0.0:
+        s_channels = 1024
+        feature_adapter = FeatureKDAdapter(teacher_channels=t_channels, student_channels=s_channels).to(device)
+        trainable_params = list(student_model.parameters()) + list(feature_adapter.parameters())
+    else:
+        trainable_params = list(student_model.parameters())
+
+    optimizer = torch.optim.AdamW(trainable_params, lr=args.lr, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
     ckpt_path = Path(args.checkpoint_path)
@@ -127,6 +152,9 @@ def main():
         epochs=args.epochs,
         alpha=args.alpha,
         temperature=args.temperature,
+        feature_weight=args.feature_weight,
+        feature_loss_type=args.feature_loss_type,
+        feature_adapter=feature_adapter,
         checkpoint_path=ckpt_path,
         resume_from_checkpoint=resume_ckpt,
     )

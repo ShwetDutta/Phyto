@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
+from src.models.feature_kd import FeatureKDAdapter, FeatureDistillationLoss
 from src.training.train import load_checkpoint
 
 
@@ -22,7 +23,7 @@ class DistillationLoss(nn.Module):
     Knowledge Distillation Loss combining:
     1. Hard Cross-Entropy (ground-truth labels)
     2. Soft KL Divergence (teacher logits scaled by temperature T)
-    3. Optional Feature-Level MSE Loss (intermediate representation matching)
+    3. Intermediate Feature Loss (projection adapted feature map matching)
     """
 
     def __init__(
@@ -30,14 +31,17 @@ class DistillationLoss(nn.Module):
         alpha: float = 0.7,
         temperature: float = 4.0,
         feature_weight: float = 0.0,
+        feature_loss_type: str = "mse",
+        feature_adapter: Optional[FeatureKDAdapter] = None,
     ) -> None:
         super().__init__()
         self.alpha = alpha
         self.temperature = temperature
         self.feature_weight = feature_weight
+        self.feature_adapter = feature_adapter
         self.ce_loss = nn.CrossEntropyLoss()
         self.kl_div_loss = nn.KLDivLoss(reduction="batchmean")
-        self.mse_loss = nn.MSELoss()
+        self.feature_loss_fn = FeatureDistillationLoss(loss_type=feature_loss_type)
 
     def forward(
         self,
@@ -52,19 +56,18 @@ class DistillationLoss(nn.Module):
         """
         hard_loss = self.ce_loss(student_logits, labels)
 
-        soft_student = F.log_softmax(student_logits / self.temperature, dim=1)
-        soft_teacher = F.softmax(teacher_logits / self.temperature, dim=1)
-        distill_loss = self.kl_div_loss(soft_student, soft_teacher) * (self.temperature ** 2)
-
-        total_loss = (1.0 - self.alpha) * hard_loss + self.alpha * distill_loss
+        if self.alpha > 0.0:
+            soft_student = F.log_softmax(student_logits / self.temperature, dim=1)
+            soft_teacher = F.softmax(teacher_logits / self.temperature, dim=1)
+            distill_loss = self.kl_div_loss(soft_student, soft_teacher) * (self.temperature ** 2)
+            total_loss = (1.0 - self.alpha) * hard_loss + self.alpha * distill_loss
+        else:
+            total_loss = hard_loss
 
         if self.feature_weight > 0.0 and student_feat is not None and teacher_feat is not None:
-            # Global Average Pooling on feature maps if 4D tensors
-            if student_feat.dim() == 4:
-                student_feat = F.adaptive_avg_pool2d(student_feat, (1, 1)).flatten(1)
-            if teacher_feat.dim() == 4:
-                teacher_feat = F.adaptive_avg_pool2d(teacher_feat, (1, 1)).flatten(1)
-            feat_loss = self.mse_loss(student_feat, teacher_feat)
+            if self.feature_adapter is not None:
+                teacher_feat, student_feat = self.feature_adapter(teacher_feat, student_feat)
+            feat_loss = self.feature_loss_fn(teacher_feat, student_feat)
             total_loss = total_loss + self.feature_weight * feat_loss
 
         return total_loss
@@ -82,31 +85,15 @@ def train_distillation_model(
     epochs: int = 15,
     alpha: float = 0.7,
     temperature: float = 4.0,
+    feature_weight: float = 0.0,
+    feature_loss_type: str = "mse",
+    feature_adapter: Optional[FeatureKDAdapter] = None,
     checkpoint_path: Optional[Union[str, Path]] = None,
     last_checkpoint_path: Optional[Union[str, Path]] = None,
     resume_from_checkpoint: Optional[Union[str, Path]] = None,
 ) -> Dict[str, List[float]]:
     """
-    Executes Knowledge Distillation training where a lightweight student model learns
-    from a high-performing teacher model.
-
-    Args:
-        student_model: Lightweight student model to train
-        teacher_model: Trained high-capacity teacher model (kept frozen)
-        train_loader: DataLoader for training set
-        validation_loader: DataLoader for validation set
-        optimizer: PyTorch optimizer for student model
-        scheduler: Optional learning rate scheduler
-        device: Target execution device ('cuda' or 'cpu')
-        epochs: Number of training epochs
-        alpha: Weight for teacher distillation loss vs hard target loss (default: 0.7)
-        temperature: Softmax temperature scaling factor (default: 4.0)
-        checkpoint_path: Path to save best student model
-        last_checkpoint_path: Optional explicit path for last epoch checkpoint
-        resume_from_checkpoint: Optional checkpoint path to resume student training
-
-    Returns:
-        Dict[str, List[float]]: Training history metrics dictionary.
+    Executes Knowledge Distillation training (Logit KD, Feature KD, or Combined KD).
     """
     if device is None:
         target_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -119,7 +106,16 @@ def train_distillation_model(
     teacher_model = teacher_model.to(target_device)
     teacher_model.eval()
 
-    kd_criterion = DistillationLoss(alpha=alpha, temperature=temperature)
+    if feature_adapter is not None:
+        feature_adapter = feature_adapter.to(target_device)
+
+    kd_criterion = DistillationLoss(
+        alpha=alpha,
+        temperature=temperature,
+        feature_weight=feature_weight,
+        feature_loss_type=feature_loss_type,
+        feature_adapter=feature_adapter,
+    )
     val_criterion = nn.CrossEntropyLoss()
 
     history: Dict[str, List[float]] = {
@@ -170,11 +166,16 @@ def train_distillation_model(
         cp = Path(checkpoint_path)
         target_last_path = cp.with_name(f"{cp.stem}_last{cp.suffix}")
 
+    use_features = feature_weight > 0.0
+
     for epoch in range(start_epoch, epochs + 1):
         start_time = time.perf_counter()
 
         # Training Phase
         student_model.train()
+        if feature_adapter is not None:
+            feature_adapter.train()
+
         running_train_loss = 0.0
         correct_train = 0
         total_train = 0
@@ -184,11 +185,26 @@ def train_distillation_model(
             labels = labels.to(target_device)
 
             with torch.no_grad():
-                teacher_logits = teacher_model(images)
+                if use_features:
+                    teacher_logits, teacher_feat = teacher_model(images, return_features=True)
+                else:
+                    teacher_logits = teacher_model(images)
+                    teacher_feat = None
 
             optimizer.zero_grad()
-            student_logits = student_model(images)
-            loss = kd_criterion(student_logits, teacher_logits, labels)
+            if use_features:
+                student_logits, student_feat = student_model(images, return_features=True)
+            else:
+                student_logits = student_model(images)
+                student_feat = None
+
+            loss = kd_criterion(
+                student_logits=student_logits,
+                teacher_logits=teacher_logits,
+                labels=labels,
+                student_feat=student_feat,
+                teacher_feat=teacher_feat,
+            )
             loss.backward()
             optimizer.step()
 
@@ -252,7 +268,12 @@ def train_distillation_model(
             "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None,
             "best_validation_accuracy": best_val_acc,
             "training_history": history,
-            "distillation_config": {"alpha": alpha, "temperature": temperature},
+            "distillation_config": {
+                "alpha": alpha,
+                "temperature": temperature,
+                "feature_weight": feature_weight,
+                "feature_loss_type": feature_loss_type,
+            },
         }
 
         if is_best and checkpoint_path is not None:

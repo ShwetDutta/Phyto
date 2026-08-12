@@ -120,17 +120,136 @@ def create_shufflenet_v2_x0_5(
     pretrained: bool = True,
 ) -> nn.Module:
     """
-    Creates an ultra-lightweight ShuffleNetV2 x0.5 model for Edge-AI Knowledge Distillation.
+    Creates an ultra-lightweight ShuffleNetV2 x0.5 model with feature map extraction capabilities.
     """
-    if pretrained:
-        try:
-            from torchvision.models import ShuffleNet_V2_X0_5_Weights
-            weights = ShuffleNet_V2_X0_5_Weights.DEFAULT
-            model = models.shufflenet_v2_x0_5(weights=weights)
-        except (ImportError, AttributeError):
-            model = models.shufflenet_v2_x0_5(weights=None)
-    else:
-        model = models.shufflenet_v2_x0_5(weights=None)
+    return ShuffleNetV2X05(num_classes=num_classes, pretrained=pretrained)
 
-    model.fc = nn.Linear(1024, num_classes)
-    return model
+
+class ShuffleNetV2X05(nn.Module):
+    """
+    ShuffleNetV2 x0.5 wrapper supporting optional intermediate feature map extraction.
+    """
+
+    def __init__(self, num_classes: int = 6, pretrained: bool = True) -> None:
+        super().__init__()
+        if pretrained:
+            try:
+                from torchvision.models import ShuffleNet_V2_X0_5_Weights
+                weights = ShuffleNet_V2_X0_5_Weights.DEFAULT
+                base_model = models.shufflenet_v2_x0_5(weights=weights)
+            except (ImportError, AttributeError):
+                base_model = models.shufflenet_v2_x0_5(weights=None)
+        else:
+            base_model = models.shufflenet_v2_x0_5(weights=None)
+
+        self.conv1 = base_model.conv1
+        self.maxpool = base_model.maxpool
+        self.stage2 = base_model.stage2
+        self.stage3 = base_model.stage3
+        self.stage4 = base_model.stage4
+        self.conv5 = base_model.conv5
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(1024, num_classes)
+
+    def forward(self, x: torch.Tensor, return_features: bool = False):
+        x = self.conv1(x)
+        x = self.maxpool(x)
+        x = self.stage2(x)
+        x = self.stage3(x)
+        x = self.stage4(x)
+        feat = self.conv5(x)
+        pooled = self.global_pool(feat)
+        flat = torch.flatten(pooled, 1)
+        logits = self.fc(flat)
+
+        if return_features:
+            return logits, feat
+        return logits
+
+
+class ShuffleNetV2X05CBAM(nn.Module):
+    """
+    ShuffleNetV2 x0.5 with integrated CBAM attention blocks at stages 2, 3, 4, and conv5.
+    Ultra-lightweight Edge student model with channel and spatial attention.
+    """
+
+    def __init__(
+        self,
+        num_classes: int = 6,
+        pretrained: bool = True,
+        reduction: int = 16,
+        kernel_size: int = 7,
+    ) -> None:
+        super().__init__()
+        if pretrained:
+            try:
+                from torchvision.models import ShuffleNet_V2_X0_5_Weights
+                weights = ShuffleNet_V2_X0_5_Weights.DEFAULT
+                base_model = models.shufflenet_v2_x0_5(weights=weights)
+            except (ImportError, AttributeError):
+                base_model = models.shufflenet_v2_x0_5(weights=None)
+        else:
+            base_model = models.shufflenet_v2_x0_5(weights=None)
+
+        self.conv1 = base_model.conv1
+        self.maxpool = base_model.maxpool
+
+        # Stage 2 (48 channels for x0.5)
+        self.stage2 = base_model.stage2
+        self.cbam2 = CBAM(48, reduction=reduction, kernel_size=kernel_size)
+
+        # Stage 3 (96 channels for x0.5)
+        self.stage3 = base_model.stage3
+        self.cbam3 = CBAM(96, reduction=reduction, kernel_size=kernel_size)
+
+        # Stage 4 (192 channels for x0.5)
+        self.stage4 = base_model.stage4
+        self.cbam4 = CBAM(192, reduction=reduction, kernel_size=kernel_size)
+
+        # Conv5 (1024 channels)
+        self.conv5 = base_model.conv5
+        self.cbam5 = CBAM(1024, reduction=reduction, kernel_size=kernel_size)
+
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(1024, num_classes)
+
+    def forward(self, x: torch.Tensor, return_features: bool = False):
+        x = self.conv1(x)
+        x = self.maxpool(x)
+
+        x = self.stage2(x)
+        x = self.cbam2(x)
+
+        x = self.stage3(x)
+        x = self.cbam3(x)
+
+        x = self.stage4(x)
+        x = self.cbam4(x)
+
+        x = self.conv5(x)
+        feat = self.cbam5(x)
+
+        pooled = self.global_pool(feat)
+        flat = torch.flatten(pooled, 1)
+        logits = self.fc(flat)
+
+        if return_features:
+            return logits, feat
+        return logits
+
+
+def create_shufflenet_v2_x0_5_cbam(
+    num_classes: int = 6,
+    pretrained: bool = True,
+    reduction: int = 16,
+    kernel_size: int = 7,
+) -> nn.Module:
+    """
+    Creates a CBAM-enhanced ShuffleNetV2 x0.5 model with a custom classifier head.
+    """
+    return ShuffleNetV2X05CBAM(
+        num_classes=num_classes,
+        pretrained=pretrained,
+        reduction=reduction,
+        kernel_size=kernel_size,
+    )

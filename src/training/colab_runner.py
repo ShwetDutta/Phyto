@@ -52,6 +52,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.01, help="Baseline learning rate (default: 0.01)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--force", action="store_true", help="Force re-training even if checkpoints exist")
+    parser.add_argument("--run-ablation", action="store_true", help="Execute the complete controlled Knowledge Distillation ablation suite")
     args = parser.parse_args()
 
     import torch
@@ -90,6 +91,21 @@ def main():
         print("Split manifest missing. Generating manifest and split...")
         run_cmd([python_exe, "-m", "src.data.build_new_dataset_manifest", "--dataset-root", args.raw_data_root])
         run_cmd([python_exe, "-m", "src.data.create_new_dataset_split", "--seed", str(args.seed)])
+
+    # Optional Stage: Execute Controlled KD Ablation Suite
+    if args.run_ablation:
+        print("\n>>> EXECUTING CONTROLLED KNOWLEDGE DISTILLATION ABLATION SUITE...")
+        run_cmd([
+            python_exe, "-m", "src.training.train_ablation",
+            "--manifest-path", str(manifest_p),
+            "--raw-data-root", args.raw_data_root,
+            "--checkpoint-dir", str(ckpt_dir / "ablation_models"),
+            "--teacher-checkpoint", str(teacher_eff_ckpt if teacher_eff_ckpt.exists() else teacher_resnet_ckpt),
+            "--image-size", str(args.image_size),
+            "--epochs", str(args.kd_epochs),
+            "--batch-size", str(args.batch_size),
+            "--seed", str(args.seed),
+        ])
 
     # Stage 2: Train Baseline ShuffleNetV2 x0.5 (Paper-Matching Config: 256x256, SGD, 35 epochs)
     print("\n>>> STAGE 1/5: Baseline ShuffleNetV2 x0.5 (Paper Reproducibility Audit Config)...")
