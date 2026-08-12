@@ -46,7 +46,7 @@ def export_to_onnx(
         dummy_input,
         str(target_p),
         export_params=True,
-        opset_version=13,
+        opset_version=18,
         do_constant_folding=True,
         input_names=["input"],
         output_names=["output"],
@@ -64,8 +64,12 @@ def benchmark_onnxruntime(onnx_path: str, num_runs: int = 100, warmup: int = 10)
         print("[Notice] `onnxruntime` is not installed. Skipping ONNX Runtime benchmark.")
         return None
 
-    providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
-    session = ort.InferenceSession(onnx_path, providers=providers)
+    avail_providers = ort.get_available_providers()
+    target_providers = [p for p in ["CUDAExecutionProvider", "CPUExecutionProvider"] if p in avail_providers]
+    if not target_providers:
+        target_providers = avail_providers
+
+    session = ort.InferenceSession(onnx_path, providers=target_providers)
     input_name = session.get_inputs()[0].name
 
     dummy_input = np.random.randn(1, 3, 224, 224).astype(np.float32)
