@@ -138,11 +138,14 @@ def main():
     exp2_ckpt = ckpt_dir / "exp2_shufflenet_v05_cbam.pth"
     exp2_json = ckpt_dir / "exp2_shufflenet_v05_cbam_metrics.json"
 
-    if not exp2_ckpt.exists() or args.force:
+    if exp2_ckpt.exists() and exp2_json.exists() and not args.force:
+        print(f"[Notice] ShuffleNetV2 x0.5 + CBAM checkpoint already exists at {exp2_ckpt}. Skipping training!")
+    else:
         run_cmd([
             python_exe, "-m", "src.training.train_baseline",
             "--manifest-path", str(manifest_p),
             "--raw-data-root", args.raw_data_root,
+            "--model-type", "shufflenet_v05_cbam",
             "--image-size", str(args.image_size),
             "--epochs", str(args.epochs),
             "--batch-size", str(args.batch_size),

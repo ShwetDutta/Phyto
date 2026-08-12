@@ -20,10 +20,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.data.phyto_dataset import PhytoDataset, load_split_manifest
-from src.models import create_shufflenet_v2_x0_5
+from src.models import create_shufflenet_v2_x0_5, create_shufflenet_v2_x0_5_cbam
 from src.training.train import set_seed, train_model
 from src.evaluation.metrics import evaluate_model
-
 
 
 def get_default_transforms(image_size: int = 256):
@@ -47,9 +46,10 @@ def get_default_transforms(image_size: int = 256):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train ShuffleNetV2 x0.5 Baseline Model")
+    parser = argparse.ArgumentParser(description="Train ShuffleNetV2 x0.5 Model")
     parser.add_argument("--manifest-path", type=str, default="results/new_dataset_manifest/groundnut_dataset_split_manifest.csv")
     parser.add_argument("--raw-data-root", type=str, default=r"c:\Users\Shwet\Desktop\Groundnut_Leaf_dataset")
+    parser.add_argument("--model-type", type=str, choices=["shufflenet_v05", "shufflenet_v05_cbam"], default="shufflenet_v05")
     parser.add_argument("--image-size", type=int, default=256, help="Input resolution (default: 256 for paper match)")
     parser.add_argument("--epochs", type=int, default=35, help="Number of epochs (default: 35 for paper match)")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size (default: 16)")
@@ -81,9 +81,12 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Training ShuffleNetV2 x0.5 Baseline on device: {device} ({args.image_size}x{args.image_size}, {args.optimizer.upper()}, LR={args.lr}, Epochs={args.epochs})")
+    print(f"Training {args.model_type} on device: {device} ({args.image_size}x{args.image_size}, {args.optimizer.upper()}, LR={args.lr}, Epochs={args.epochs})")
 
-    model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
+    if args.model_type == "shufflenet_v05_cbam":
+        model = create_shufflenet_v2_x0_5_cbam(num_classes=6, pretrained=True)
+    else:
+        model = create_shufflenet_v2_x0_5(num_classes=6, pretrained=True)
     criterion = nn.CrossEntropyLoss()
 
     if args.optimizer.lower() == "sgd":
