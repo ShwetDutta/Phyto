@@ -60,6 +60,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--checkpoint-path", type=str, default="results/checkpoints/baseline_shufflenet_v05.pth")
     parser.add_argument("--output-metrics-json", type=str, default="results/checkpoints/baseline_shufflenet_v05_metrics.json")
+    parser.add_argument("--resume-from-checkpoint", type=str, default=None, help="Path to checkpoint file to resume training from")
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -94,6 +95,12 @@ def main():
 
     ckpt_path = Path(args.checkpoint_path)
     ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+    last_ckpt_path = ckpt_path.with_name(f"{ckpt_path.stem}_last{ckpt_path.suffix}")
+
+    resume_ckpt = args.resume_from_checkpoint
+    if resume_ckpt is None and last_ckpt_path.exists():
+        resume_ckpt = str(last_ckpt_path)
+        print(f"[Auto-Resume] Found existing epoch checkpoint at {last_ckpt_path}. Resuming training...")
 
     history = train_model(
         model=model,
@@ -105,6 +112,7 @@ def main():
         device=device,
         epochs=args.epochs,
         checkpoint_path=ckpt_path,
+        resume_from_checkpoint=resume_ckpt,
     )
 
     # Load best model for evaluation on test set

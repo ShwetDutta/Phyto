@@ -63,6 +63,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--checkpoint-path", type=str, default="results/checkpoints/kd_shufflenet_v05_from_resnet50.pth")
     parser.add_argument("--output-metrics-json", type=str, default="results/checkpoints/kd_shufflenet_v05_metrics.json")
+    parser.add_argument("--resume-from-checkpoint", type=str, default=None, help="Path to checkpoint file to resume training from")
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -108,6 +109,12 @@ def main():
 
     ckpt_path = Path(args.checkpoint_path)
     ckpt_path.parent.mkdir(parents=True, exist_ok=True)
+    last_ckpt_path = ckpt_path.with_name(f"{ckpt_path.stem}_last{ckpt_path.suffix}")
+
+    resume_ckpt = args.resume_from_checkpoint
+    if resume_ckpt is None and last_ckpt_path.exists():
+        resume_ckpt = str(last_ckpt_path)
+        print(f"[Auto-Resume] Found existing epoch checkpoint at {last_ckpt_path}. Resuming training...")
 
     history = train_distillation_model(
         student_model=student_model,
@@ -121,6 +128,7 @@ def main():
         alpha=args.alpha,
         temperature=args.temperature,
         checkpoint_path=ckpt_path,
+        resume_from_checkpoint=resume_ckpt,
     )
 
     # Load best student checkpoint for test evaluation
