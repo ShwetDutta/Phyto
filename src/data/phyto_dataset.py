@@ -87,6 +87,59 @@ def load_split_manifest(
     return df
 
 
+def resolve_image_path(
+    raw_data_root: Path,
+    row: pd.Series
+) -> Path:
+    """
+    Resolves physical image file path with multi-level fallbacks for diverse folder structures.
+    """
+    filename = str(row['filename'])
+    class_label = str(row['class_label'])
+
+    # 1. Primary path check: relative_path as-is
+    if 'relative_path' in row and pd.notna(row['relative_path']):
+        rel_p = str(row['relative_path'])
+        candidate = raw_data_root / rel_p
+        if candidate.exists():
+            return candidate
+
+        # 1b. Try stripping leading split folder (e.g. 'train/' or 'test/')
+        rel_parts = Path(rel_p).parts
+        if len(rel_parts) > 1:
+            candidate = raw_data_root / Path(*rel_parts[1:])
+            if candidate.exists():
+                return candidate
+
+        # 1c. Try nested directory (e.g. raw_data_root / raw_data_root.name / relative_path)
+        candidate = raw_data_root / raw_data_root.name / rel_p
+        if candidate.exists():
+            return candidate
+
+    # 2. Try folder_name column + filename
+    if 'folder_name' in row and pd.notna(row['folder_name']):
+        candidate = raw_data_root / str(row['folder_name']) / filename
+        if candidate.exists():
+            return candidate
+
+    # 3. Try CLASS_TO_FOLDER mapping + filename
+    folder_name = CLASS_TO_FOLDER.get(class_label, class_label)
+    candidate = raw_data_root / folder_name / filename
+    if candidate.exists():
+        return candidate
+
+    # 4. Try legacy folder names (with spaces) + filename
+    old_folder = CLASS_TO_FOLDER.get(f"{class_label}_old", folder_name)
+    candidate = raw_data_root / old_folder / filename
+    if candidate.exists():
+        return candidate
+
+    # 5. Default return path for error reporting
+    if 'relative_path' in row and pd.notna(row['relative_path']):
+        return raw_data_root / str(row['relative_path'])
+    return raw_data_root / folder_name / filename
+
+
 def verify_manifest_paths(
     manifest_df: pd.DataFrame,
     raw_data_root: Union[str, Path]
@@ -97,19 +150,7 @@ def verify_manifest_paths(
     root_p = Path(raw_data_root)
 
     for idx, row in manifest_df.iterrows():
-        if 'relative_path' in row and pd.notna(row['relative_path']):
-            img_path = root_p / str(row['relative_path'])
-        else:
-            class_label = str(row['class_label'])
-            filename = str(row['filename'])
-            folder_name = CLASS_TO_FOLDER.get(class_label, class_label)
-            img_path = root_p / folder_name / filename
-
-            if not img_path.exists() and class_label in ['healthy_leaf', 'late_leaf_spot', 'nutrition_deficiency']:
-                # Retry with old folder space names
-                old_folder = CLASS_TO_FOLDER.get(f"{class_label}_old", folder_name)
-                img_path = root_p / old_folder / filename
-
+        img_path = resolve_image_path(root_p, row)
         if not img_path.exists():
             raise FileNotFoundError(
                 f"Image file not found for row {idx} (`{row.get('class_label')}` / `{row.get('filename')}`): {img_path.resolve()}"
@@ -149,17 +190,7 @@ class PhytoDataset(Dataset[Tuple[Any, int]]):
 
     def __getitem__(self, index: int) -> Tuple[Any, int]:
         row = self.manifest_df.iloc[index]
-        class_label = str(row['class_label'])
-        filename = str(row['filename'])
-
-        if 'relative_path' in row and pd.notna(row['relative_path']):
-            img_path = self.raw_data_root / str(row['relative_path'])
-        else:
-            folder_name = CLASS_TO_FOLDER.get(class_label, class_label)
-            img_path = self.raw_data_root / folder_name / filename
-            if not img_path.exists():
-                old_folder = CLASS_TO_FOLDER.get(f"{class_label}_old", folder_name)
-                img_path = self.raw_data_root / old_folder / filename
+        img_path = resolve_image_path(self.raw_data_root, row)
 
         if not img_path.exists():
             raise FileNotFoundError(f"Image not found at path: {img_path.resolve()}")
@@ -169,7 +200,7 @@ class PhytoDataset(Dataset[Tuple[Any, int]]):
         if 'class_idx' in row and pd.notna(row['class_idx']):
             label_idx = int(row['class_idx'])
         else:
-            label_idx = self.class_to_idx[class_label]
+            label_idx = self.class_to_idx[str(row['class_label'])]
 
         if self.transform is not None:
             image = self.transform(image)
