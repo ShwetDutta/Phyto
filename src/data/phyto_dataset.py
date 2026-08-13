@@ -134,7 +134,26 @@ def resolve_image_path(
     if candidate.exists():
         return candidate
 
-    # 5. Default return path for error reporting
+    # 5. Try searching immediate subdirectories in raw_data_root
+    if raw_data_root.exists():
+        try:
+            for sub in raw_data_root.iterdir():
+                if sub.is_dir():
+                    if 'relative_path' in row and pd.notna(row['relative_path']):
+                        cand = sub / str(row['relative_path'])
+                        if cand.exists():
+                            return cand
+                    if 'folder_name' in row and pd.notna(row['folder_name']):
+                        cand = sub / str(row['folder_name']) / filename
+                        if cand.exists():
+                            return cand
+                    cand = sub / folder_name / filename
+                    if cand.exists():
+                        return cand
+        except Exception:
+            pass
+
+    # 6. Default return path for error reporting
     if 'relative_path' in row and pd.notna(row['relative_path']):
         return raw_data_root / str(row['relative_path'])
     return raw_data_root / folder_name / filename
@@ -193,7 +212,26 @@ class PhytoDataset(Dataset[Tuple[Any, int]]):
         img_path = resolve_image_path(self.raw_data_root, row)
 
         if not img_path.exists():
-            raise FileNotFoundError(f"Image not found at path: {img_path.resolve()}")
+            root_exists = self.raw_data_root.exists()
+            subdirs = [p.name for p in self.raw_data_root.iterdir() if p.is_dir()] if root_exists else []
+            raise FileNotFoundError(
+                f"\n=======================================================\n"
+                f"PHYTO DATASET PATH RESOLUTION ERROR\n"
+                f"=======================================================\n"
+                f"Image file not found: {img_path.resolve()}\n"
+                f"Target Filename: {row.get('filename')}\n"
+                f"Raw Data Root Passed: {self.raw_data_root.resolve()} (Exists: {root_exists})\n"
+                f"Directories found in Raw Data Root: {subdirs}\n\n"
+                f"DIAGNOSIS & SOLUTIONS:\n"
+                f"1. NEW 10,361-IMAGE DATASET:\n"
+                f"   If you intend to run the NEW 10,361 dataset manifest:\n"
+                f"   Ensure --raw-data-root points to the directory containing 'train' and 'test' folders.\n"
+                f"   (Example: --raw-data-root '/content/drive/MyDrive/Datasets for phyto/raw_data_new/Groundnut_Leaf_dataset')\n\n"
+                f"2. ORIGINAL 3,060-IMAGE DATASET:\n"
+                f"   If your local/Colab folder at '/content/Groundnut_Leaf_dataset' is the original 3,060 dataset:\n"
+                f"   Update --manifest-path to: 'results/dataset_manifest/dataset_split_manifest.csv'\n"
+                f"=======================================================\n"
+            )
 
         image = Image.open(img_path).convert('RGB')
         
