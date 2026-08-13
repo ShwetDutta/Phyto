@@ -179,8 +179,10 @@ def train_distillation_model(
         running_train_loss = 0.0
         correct_train = 0
         total_train = 0
+        total_batches = len(train_loader)
 
-        for images, labels in train_loader:
+        print(f"Epoch {epoch}/{epochs} Knowledge Distillation Progress:")
+        for batch_idx, (images, labels) in enumerate(train_loader, 1):
             images = images.to(target_device)
             labels = labels.to(target_device)
 
@@ -213,6 +215,15 @@ def train_distillation_model(
             _, preds = torch.max(student_logits, 1)
             correct_train += int((preds == labels).sum().item())
             total_train += batch_size
+
+            if batch_idx % 50 == 0 or batch_idx == total_batches:
+                curr_acc = (correct_train / total_train) * 100.0 if total_train > 0 else 0.0
+                curr_loss = running_train_loss / total_train if total_train > 0 else 0.0
+                print(
+                    f"  KD Epoch [{epoch}/{epochs}] Batch [{batch_idx}/{total_batches}] "
+                    f"- Loss: {curr_loss:.4f} | Acc: {curr_acc:.2f}%",
+                    flush=True
+                )
 
         epoch_train_loss = running_train_loss / total_train if total_train > 0 else 0.0
         epoch_train_acc = (correct_train / total_train) * 100.0 if total_train > 0 else 0.0
