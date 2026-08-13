@@ -83,23 +83,34 @@ def load_checkpoint(
 
     model = model.to(target_device)
     if "model_state_dict" in checkpoint:
-        model.load_state_dict(checkpoint["model_state_dict"])
+        try:
+            model.load_state_dict(checkpoint["model_state_dict"])
+            if (
+                optimizer is not None
+                and "optimizer_state_dict" in checkpoint
+                and checkpoint["optimizer_state_dict"] is not None
+            ):
+                optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+            if (
+                scheduler is not None
+                and "scheduler_state_dict" in checkpoint
+                and checkpoint["scheduler_state_dict"] is not None
+            ):
+                scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+        except Exception as e:
+            print(f"\n[Warning] Auto-resume checkpoint state_dict mismatch for {ckpt_p.name}: {e}")
+            print("[Notice] Overriding auto-resume checkpoint due to architecture mismatch. Starting training from scratch.\n")
+            return model, optimizer, scheduler, 0, 0.0, {
+                "train_loss": [],
+                "train_accuracy": [],
+                "validation_loss": [],
+                "validation_accuracy": [],
+                "learning_rate": [],
+                "epoch_time": [],
+            }
     else:
         raise KeyError("Checkpoint missing required key 'model_state_dict'")
-
-    if (
-        optimizer is not None
-        and "optimizer_state_dict" in checkpoint
-        and checkpoint["optimizer_state_dict"] is not None
-    ):
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-    if (
-        scheduler is not None
-        and "scheduler_state_dict" in checkpoint
-        and checkpoint["scheduler_state_dict"] is not None
-    ):
-        scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
     start_epoch = int(checkpoint.get("epoch", 0))
     best_val_acc = float(checkpoint.get("best_validation_accuracy", 0.0))
